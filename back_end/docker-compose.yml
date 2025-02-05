@@ -1,0 +1,100 @@
+services:
+    api:
+        build:
+            context: .
+            dockerfile: ./docker/api/Dockerfile
+        image: clinical-trials-api:latest
+        pull_policy: never
+        container_name: clinical-trials-api
+        restart: always
+        command: hypercorn --config=hypercorn-docker.toml app.main:app
+        ports:
+            - "5000:5000"
+        env_file:
+            - .env
+        environment:
+            STAGE: prod
+        depends_on:
+            db:
+                condition: service_healthy
+            tika-grpc:
+                condition: service_started
+            celery_worker:
+                condition: service_healthy
+            celery_beat:
+                condition: service_started
+
+    db:
+        image: postgres:latest
+        container_name: clinical-trials-db
+        restart: always
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data/
+        environment:
+            PGUSER: postgres
+            POSTGRES_HOST: db
+            POSTGRES_PORT: 5432
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: 123QWE,./
+            POSTGRES_DB: clinical_trials
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready", "-h", "db", "-d", "clinical_trials", "-U", "postgres" ]
+            interval: 1s
+            timeout: 5s
+            retries: 10
+
+    tika-grpc:
+        build:
+            context: .
+            dockerfile: ./docker/tika-grpc/Dockerfile
+        image: clinical-trials-tika-grpc:latest
+        pull_policy: never
+        container_name: clinical-trials-tika-grpc
+        restart: always
+        command: java -jar /app/target/fcnlp-tika-grpc-1.0.1-SNAPSHOT-fat.jar
+        ports:
+            - "8888:8888"
+
+    redis:
+        image: "redis:7.2-alpine"
+        container_name: clinical-trials-redis
+        restart: always
+        ports:
+            - "6379:6379"
+        healthcheck:
+            test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+            interval: 1s
+            timeout: 5s
+            retries: 10
+
+    celery_worker:
+        image: clinical-trials-api:latest
+        pull_policy: never
+        container_name: clinical-trials-celery-worker
+        restart: always
+        command: celery -b "redis://redis:6379" -A app.ct_core worker --concurrency=10 -l info
+        healthcheck:
+            test: [ "CMD-SHELL", "celery -b redis://redis:6379 inspect ping --destination celery@$$HOSTNAME" ]
+            interval: 1s
+            timeout: 5s
+            retries: 10
+        depends_on:
+            redis:
+                condition: service_healthy
+
+    celery_beat:
+        image: clinical-trials-api:latest
+        pull_policy: never
+        container_name: clinical-trials-celery-beat
+        restart: always
+        command: celery -b "redis://redis:6379" -A app.ct_core beat -l info -s /tmp/celerybeat-schedule
+        depends_on:
+            redis:
+                condition: service_healthy
+            celery_worker:
+                condition: service_healthy
+
+volumes:
+    postgres_data:

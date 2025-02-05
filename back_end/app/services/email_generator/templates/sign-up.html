@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <!-- Message -->
+    <tr class="tr-sign-up-message">
+        <td>
+            <p>
+                Thank you for signing up.
+                Please use the (One Time Password)OTP below to verify your account. Do not share this code with anyone.
+            </p>
+    </tr>
+
+    <!-- OTP -->
+    <tr class="tr-sign-up-otp">
+        <td>
+            <div>{{ otp }}</div>
+        </td>
+    </tr>
+{% endblock %}

@@ -1,0 +1,328 @@
+{% import "possible-mentions.html" as possible_mentions %}
+
+<html lang="en">
+<head>
+    <title>Analysis Report</title>
+    <style>
+        .content-wrapper {
+            margin-bottom: 25px;
+        }
+
+        .title-color {
+            color: #188385;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table td {
+            padding: 3px 15px 3px 10px;
+        }
+
+        table thead {
+            background-color: #c7f9cc;
+        }
+
+        table thead td {
+            font-weight: bold;
+            font-size: 13px;
+            border: 1px solid #dddfe1;
+        }
+
+        table tbody td {
+            color: #636363;
+            border: 1px solid #dddfe1;
+        }
+
+        table tbody tr {
+            background-color: #f9fafb;
+        }
+
+        table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+
+        .text-bold {
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+<header style="margin: 15px 15px 50px 25px;text-decoration: underline;">
+    <a href="https://clinical.fastdatascience.com">clinical.fastdatascience.com</a>
+</header>
+
+<main style="margin: 30px 25px 50px 25px;">
+    <!-- Title -->
+    <div class="content-wrapper">
+        <h1 class="title-color">Analysis of {{ filename }}</h1>
+    </div>
+
+    <!-- Wordcloud -->
+    <div class="content-wrapper">
+        <h2 class="title-color">This is a {{ risk.level }}-risk {{ condition.prediction }} trial</h2>
+        <p>
+            The risk level is derived from a total score of <span class="text-bold">{{ risk.score }}</span>
+            on a 100-point scale.
+        </p>
+        <p>Wordcloud of informative terms from the document:</p>
+        {% if wordcloud.img_base64 %}
+            <img src="data:image/png;base64, {{ wordcloud.img_base64 }}" alt=wordcloud"/>
+        {% endif %}
+    </div>
+
+    <!-- Key information about this protocol -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Key information about this protocol</h2>
+        <table>
+            <thead>
+            <tr>
+                {% for column in key_protocol_info.columns %}
+                    <td> {{ column }} </td>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for data in key_protocol_info.data %}
+                <tr>
+                    {% for datum in data %}
+                        <td> {{ datum }} </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Risk calculation spreadsheet -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Risk calculation spreadsheet</h2>
+        <p>
+            The table below shows how the risk of this protocol was calculated. Protocols are scored according to a
+            simple linear formula between 0 and 100, where 100 would be a perfect low-risk protocol and 0 would be a
+            high-risk protocol. Each parameter extracted in the table on the left is entered into a spreadsheet and
+            contributes to the scoring with an associated weight. For example, by far the strongest indicator that a
+            protocol is low-risk is the presence of a statistical analysis plan.
+        </p>
+        <table>
+            <thead>
+            <tr>
+                {% for column in risk.calculation.columns %}
+                    <td> {{ column }} </td>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for data in risk.calculation.data %}
+                <tr>
+                    {% for datum in data %}
+                        <td> {{ datum }} </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Sample size tertiles -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Sample size tertiles</h2>
+        <p>
+            The model characterises trials as small, medium and large according to the number of participants. Since
+            early phase trials are smaller than later trials, tertiles are used to define what counts as e.g. a small
+            HIV Phase I trial. The table of tertiles is given below.
+        </p>
+        <table>
+            <thead>
+            <tr>
+                {% for column in sample_size_tertiles.columns %}
+                    <td> {{ column }} </td>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for data in sample_size_tertiles.data %}
+                <tr>
+                    {% for datum in data %}
+                        <td> {{ datum }} </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- How the protocol was analysed -->
+    {% if logs %}
+        <div class="content-wrapper">
+            <h2 class="title-color">How the protocol was analysed</h2>
+            <div style="margin-top:0;margin-bottom: 10px;">
+                <p style="margin: 0;">
+                    This is a log of the analysis of the text which was carried out by the protocol analysis tool, with an
+                    explanation of the scoring.
+                </p>
+            </div>
+            {% for key, value in logs.items() %}
+                <div style="margin-top:0;margin-bottom: 10px;">
+                    {% for text in value %}
+                        <p style="margin: 0;">{{ text }}</p>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Explanation: Overview Of Word Counts By Page -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Explanation: Overview Of Word Counts By Page</h2>
+        {% if overview_word_counts_by_page.explanation_img_base64 %}
+            <img src="data:image/png;base64, {{ overview_word_counts_by_page.explanation_img_base64 }}"
+                 alt="explanation overview of word counts by page"/>
+        {% endif %}
+    </div>
+
+    <!-- Explanation: Condition -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Explanation: Condition</h2>
+        <p>
+            Condition identified: <span class="text-bold">{{ condition.prediction }}</span>.
+            Confidence: <span class="text-bold">{{ condition.score_percentage }}</span>. The heat map below shows you
+            key terms related to the condition and which pages they occurred on throughout the
+            document. {{ condition.explanation_extra_surtitle_text }}
+        </p>
+        {% if condition.explanation_img_base64 %}
+            <img src="data:image/png;base64, {{ condition.explanation_img_base64 }}"
+                 alt="explanation condition"/>
+        {% endif %}
+    </div>
+    {% if condition.context["items"] %}
+        {{ possible_mentions.create(condition.context) }}
+    {% endif %}
+
+    <!-- Explanation: Phase -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Explanation: Phase</h2>
+        <p>
+            Where was the phase mentioned in the document? The graph below shows possible phases and which pages
+            they were mentioned on. The document is most likely to be <span
+            class="text-bold">Phase {{ phase.prediction }}</span>.
+            {{ phase.explanation_extra_surtitle_text }}
+        </p>
+        {% if phase.explanation_img_base64 %}
+            <img src="data:image/png;base64, {{ phase.explanation_img_base64 }}"
+                 alt="explanation phase"/>
+        {% endif %}
+    </div>
+    {% if phase.context["items"] %}
+        {{ possible_mentions.create(phase.context) }}
+    {% endif %}
+
+    <!-- Explanation: SAP -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Explanation: SAP</h2>
+        <p>
+            Which pages contained highly statistical content and were likely to be part of the SAP? Graph of a selection
+            of key statistical terms by page number, overlaid with page-level probabilities (in
+            pink). {{ sap.explanation_extra_surtitle_text }}
+        </p>
+        {% if sap.explanation_img_base64 %}
+            <img src="data:image/png;base64, {{ sap.explanation_img_base64 }}"
+                 alt="explanation sap"/>
+        {% endif %}
+    </div>
+    {% if sap.context["items"] %}
+        {{ possible_mentions.create(sap.context) }}
+    {% endif %}
+
+    <!-- Explanation: Effect Estimate -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Explanation: Effect Estimate</h2>
+        <p>
+            Where was an effect estimate found in the document? The graph below shows some candidate effect
+            estimates and a selection of key terms by page number, overlaid with page-level probabilities (in pink).
+            The
+            protocol is <span class="text-bold">{{ effect_estimate.score_percentage }}</span> likely to contain an
+            effect estimate. {{ effect_estimate.explanation_extra_surtitle_text }}
+        </p>
+        {% if effect_estimate.explanation_img_base64 %}
+            <img src="data:image/png;base64, {{ effect_estimate.explanation_img_base64 }}"
+                 alt="effect estimate"/>
+        {% endif %}
+    </div>
+    {% if effect_estimate.context["items"] %}
+        {{ possible_mentions.create(effect_estimate.context) }}
+    {% endif %}
+
+    <!-- Explanation: Number of Subjects -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Explanation: Number of Subjects</h2>
+        <p>
+            Which pages contained terms relating to the number of subjects? The sample size appears to
+            be <span class="text-bold">{{ sample_size.prediction }}</span> with confidence <span
+            class="text-bold">{{ sample_size.score_percentage }}</span>.
+            {{ sample_size.explanation_extra_surtitle_text }}
+        </p>
+        {% if sample_size.explanation_img_base64 %}
+            <img src="data:image/png;base64, {{ sample_size.explanation_img_base64 }}"
+                 alt="number of subjects"/>
+        {% endif %}
+    </div>
+    {% if sample_size.context["items"] %}
+        {{ possible_mentions.create(sample_size.context) }}
+    {% endif %}
+
+    <!-- Explanation: Number of Arms -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Explanation: Number of Arms</h2>
+        <p>
+            Which pages contained terms relating to the number of arms? The trial appears to have
+            <span class="text-bold">{{ num_arms.prediction }}</span> arm(s).
+        </p>
+        {% if num_arms.explanation_img_base64 %}
+            <img src="data:image/png;base64, {{ num_arms.explanation_img_base64 }}"
+                 alt="number of arms"/>
+        {% endif %}
+    </div>
+    {% if num_arms.context["items"] %}
+        {{ possible_mentions.create(num_arms.context) }}
+    {% endif %}
+
+    <!-- Explanation: Country -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Explanation: Country</h2>
+        <p>
+            Which countries were mentioned on which pages in the document? Estimated trial countries:
+            <span class="text-bold">{{ country.prediction }}</span>. The AI looked at the countries which were mentioned
+            more often and earlier on in the document than other countries. The graph below shows the candidate
+            countries as a heat map throughout the pages of the document.
+        </p>
+        {% if country.explanation_img_base64 %}
+            <img src="data:image/png;base64, {{ country.explanation_img_base64 }}"
+                 alt="country"/>
+        {% endif %}
+    </div>
+    {% if country.context["items"] %}
+        {{ possible_mentions.create(country.context) }}
+    {% endif %}
+
+    <!-- Explanation: Simulation -->
+    <div class="content-wrapper">
+        <h2 class="title-color">Explanation: Simulation</h2>
+        <p>
+            Which pages mentioned words related to simulation? The graph below shows a selection of simulation-related
+            terms by page number. The protocol is <span class="text-bold">{{ simulation.score_percentage }}</span>
+            likely to involve simulation for sample size.
+        </p>
+        {% if simulation.explanation_img_base64 %}
+            <img src="data:image/png;base64, {{ simulation.explanation_img_base64 }}"
+                 alt="simulation"/>
+        {% endif %}
+    </div>
+    {% if simulation.context["items"] %}
+        {{ possible_mentions.create(simulation.context) }}
+    {% endif %}
+</main>
+</body>
+</html>

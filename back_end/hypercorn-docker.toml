@@ -1,0 +1,35 @@
+bind = "0.0.0.0:5000"
+
+# Worker settings
+# Number of worker processes. Typically set to (2 x CPU cores) + 1
+workers = 1
+worker_class = "uvloop"
+
+# Timeout settings
+# Workers silent for more than this many seconds are killed and restarted
+timeout = 30
+
+# Logging configuration
+# accesslog = "/var/log/hypercorn/access.log"
+# errorlog = "/var/log/hypercorn/error.log"
+loglevel = "info"
+access_log_format = "%(t)s %(h)s %(S)s %(r)s %(s)s"
+
+# SSL Configuration (Optional but recommended for production)
+# Uncomment and configure the following lines if you want to enable SSL
+# certfile = "/path/to/ssl/cert.pem"
+# keyfile = "/path/to/ssl/key.pem"
+
+# Graceful shutdown settings
+# Time to wait for workers to finish on shutdown
+graceful_timeout = 30
+# Time to keep connections alive
+keep_alive_timeout = 5
+
+# Worker connections
+# Maximum number of simultaneous connections per worker
+worker_connections = 1000
+
+# Backlog
+# Maximum number of pending connections
+backlog = 2048

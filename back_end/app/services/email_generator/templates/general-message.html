@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <!-- Paragraphs -->
+    <tr class="tr-general-message-paragraphs">
+        <td>
+            {% for paragraph in paragraphs %}
+                <p> {{ paragraph }} </p>
+            {% endfor %}
+        </td>
+    </tr>
+{% endblock %}

@@ -1,0 +1,11 @@
+services:
+    front:
+        container_name: clinical-trials-front
+        build: .
+        command: serve -s dist -p 5173
+        ports:
+            - "5173:5173"
+        env_file:
+            - .env
+        environment:
+            NODE_ENV: production
