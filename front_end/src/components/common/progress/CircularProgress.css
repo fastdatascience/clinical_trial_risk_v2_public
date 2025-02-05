@@ -1,0 +1,41 @@
+.svg-pi-wrapper {
+  position: relative;
+}
+
+.svg-pi {
+  transform: rotate(-90deg);
+}
+
+.svg-pi-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.svg-circle-text {
+  font-size: 2rem;
+  text-anchor: middle;
+  font-weight: 600;
+  font-family: "Poppins";
+}
+.svg-circle-status {
+  font-weight: 300;
+  text-anchor: middle;
+  font-size: 1.2rem;
+  font-family: "Roboto";
+  color: #989898;
+}
+
+@media (max-width: 900px) {
+  .svg-circle-text {
+    font-size: 5vw;
+  }
+
+  .svg-circle-status {
+    font-size: 3vw;
+  }
+}

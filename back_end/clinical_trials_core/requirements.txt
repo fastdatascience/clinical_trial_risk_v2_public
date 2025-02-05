@@ -1,0 +1,10 @@
+requests==2.31.0
+spacy==3.7.2
+numpy==1.26.4
+pypdf==4.0.1
+scikit-learn==1.4.0
+drug-named-entity-recognition==2.0.4
+pycountry==22.1.10
+country-named-entity-recognition==0.4
+pandas==2.2.0
+pdfplumber==0.10.4

@@ -1,0 +1,356 @@
+{
+    "risk_thresholds": {
+        "low": 50,
+        "high": 40
+    },
+    "cost_risk_models": {
+        "age": {
+            "cost": 0,
+            "risk": 0
+        },
+        "sap": {
+            "cost": 0,
+            "risk": 26
+        },
+        "drug": {
+            "cost": 0,
+            "risk": 0
+        },
+        "chemo": {
+            "cost": 0,
+            "risk": 0
+        },
+        "child": {
+            "cost": 0,
+            "risk": 0
+        },
+        "phase": {
+            "cost": 0,
+            "risk": 5
+        },
+        "design": {
+            "cost": 0,
+            "risk": 0
+        },
+        "gender": {
+            "cost": 0,
+            "risk": 0
+        },
+        "biobank": {
+            "cost": 0,
+            "risk": 0
+        },
+        "consent": {
+            "cost": 0,
+            "risk": 0
+        },
+        "country": {
+            "cost": 0,
+            "risk": 0
+        },
+        "healthy": {
+            "cost": 0,
+            "risk": 0
+        },
+        "interim": {
+            "cost": 0,
+            "risk": 0
+        },
+        "placebo": {
+            "cost": 0,
+            "risk": 0
+        },
+        "regimen": {
+            "cost": 0,
+            "risk": 0
+        },
+        "vaccine": {
+            "cost": -14284.60742684474,
+            "risk": 0
+        },
+        "adjuvant": {
+            "cost": 0,
+            "risk": 0
+        },
+        "constant": {
+            "cost": 27530.38952250608,
+            "risk": -7
+        },
+        "duration": {
+            "cost": 0,
+            "risk": 0
+        },
+        "num_arms": {
+            "cost": 0,
+            "risk": 2
+        },
+        "condition": {
+            "cost": 0,
+            "risk": 0
+        },
+        "num_sites": {
+            "cost": 0,
+            "risk": 0
+        },
+        "radiation": {
+            "cost": 0,
+            "risk": 0
+        },
+        "num_visits": {
+            "cost": 0,
+            "risk": 0
+        },
+        "simulation": {
+            "cost": 0,
+            "risk": 10
+        },
+        "cancer_type": {
+            "cost": 0,
+            "risk": 0
+        },
+        "cohort_size": {
+            "cost": 0,
+            "risk": 0
+        },
+        "sample_size": {
+            "cost": 0,
+            "risk": 0
+        },
+        "cancer_stage": {
+            "cost": 0,
+            "risk": 0
+        },
+        "condition=TB": {
+            "cost": 84033.89781165063,
+            "risk": 0
+        },
+        "condition=EDD": {
+            "cost": -8151.846021387106,
+            "risk": 0
+        },
+        "condition=HIV": {
+            "cost": 5016.014796040056,
+            "risk": 0
+        },
+        "condition=MAL": {
+            "cost": 2339.1131475625452,
+            "risk": 0
+        },
+        "condition=NTD": {
+            "cost": 28083.769070542552,
+            "risk": 0
+        },
+        "condition=POL": {
+            "cost": -8798.186770711502,
+            "risk": 0
+        },
+        "document_type": {
+            "cost": 0,
+            "risk": 0
+        },
+        "international": {
+            "cost": 0,
+            "risk": 10
+        },
+        "randomisation": {
+            "cost": 0,
+            "risk": 0
+        },
+        "overnight_stay": {
+            "cost": 0,
+            "risk": 0
+        },
+        "condition=COVID": {
+            "cost": -1164.3182826634434,
+            "risk": 0
+        },
+        "effect_estimate": {
+            "cost": 0,
+            "risk": 16
+        },
+        "human_challenge": {
+            "cost": 0,
+            "risk": 0
+        },
+        "control_negative": {
+            "cost": 0,
+            "risk": 0
+        },
+        "intervention_type": {
+            "cost": 0,
+            "risk": 0
+        },
+        "num_interventions_total": {
+            "cost": 38.076598143143904,
+            "risk": 0
+        },
+        "num_interventions_per_visit": {
+            "cost": 0,
+            "risk": 0
+        },
+        "regimen=doses_per_day": {
+            "cost": 0,
+            "risk": 0
+        },
+        "regimen=days_between_doses": {
+            "cost": 0,
+            "risk": 0
+        },
+        "regimen=multiple_doses_per_day": {
+            "cost": 0,
+            "risk": 0
+        }
+    },
+    "sample_size_tertiles": [
+        {
+            "phase": "*",
+            "condition": "*",
+            "lower_tertile": 100,
+            "upper_tertile": 1000
+        },
+        {
+            "phase": 0,
+            "condition": "HIV",
+            "lower_tertile": 10,
+            "upper_tertile": 15
+        },
+        {
+            "phase": 0.5,
+            "condition": "HIV",
+            "lower_tertile": 40,
+            "upper_tertile": 130
+        },
+        {
+            "phase": 1,
+            "condition": "HIV",
+            "lower_tertile": 40,
+            "upper_tertile": 130
+        },
+        {
+            "phase": 1.5,
+            "condition": "HIV",
+            "lower_tertile": 80,
+            "upper_tertile": 280
+        },
+        {
+            "phase": 2,
+            "condition": "HIV",
+            "lower_tertile": 100,
+            "upper_tertile": 300
+        },
+        {
+            "phase": 2.5,
+            "condition": "HIV",
+            "lower_tertile": 1000,
+            "upper_tertile": 2000
+        },
+        {
+            "phase": 3,
+            "condition": "HIV",
+            "lower_tertile": 1000,
+            "upper_tertile": 2000
+        },
+        {
+            "phase": 4,
+            "condition": "HIV",
+            "lower_tertile": 3000,
+            "upper_tertile": 4000
+        },
+        {
+            "phase": 0,
+            "condition": "*",
+            "lower_tertile": 10,
+            "upper_tertile": 15
+        },
+        {
+            "phase": 0.5,
+            "condition": "*",
+            "lower_tertile": 40,
+            "upper_tertile": 130
+        },
+        {
+            "phase": 1,
+            "condition": "*",
+            "lower_tertile": 40,
+            "upper_tertile": 130
+        },
+        {
+            "phase": 1.5,
+            "condition": "*",
+            "lower_tertile": 80,
+            "upper_tertile": 280
+        },
+        {
+            "phase": 2,
+            "condition": "*",
+            "lower_tertile": 100,
+            "upper_tertile": 300
+        },
+        {
+            "phase": 2.5,
+            "condition": "*",
+            "lower_tertile": 1000,
+            "upper_tertile": 2000
+        },
+        {
+            "phase": 3,
+            "condition": "*",
+            "lower_tertile": 1000,
+            "upper_tertile": 2000
+        },
+        {
+            "phase": 4,
+            "condition": "*",
+            "lower_tertile": 3000,
+            "upper_tertile": 4000
+        },
+        {
+            "phase": 0,
+            "condition": "TB",
+            "lower_tertile": 10,
+            "upper_tertile": 15
+        },
+        {
+            "phase": 0.5,
+            "condition": "TB",
+            "lower_tertile": 30,
+            "upper_tertile": 60
+        },
+        {
+            "phase": 1,
+            "condition": "TB",
+            "lower_tertile": 30,
+            "upper_tertile": 60
+        },
+        {
+            "phase": 1.5,
+            "condition": "TB",
+            "lower_tertile": 40,
+            "upper_tertile": 80
+        },
+        {
+            "phase": 2,
+            "condition": "TB",
+            "lower_tertile": 50,
+            "upper_tertile": 100
+        },
+        {
+            "phase": 2.5,
+            "condition": "TB",
+            "lower_tertile": 500,
+            "upper_tertile": 1500
+        },
+        {
+            "phase": 3,
+            "condition": "TB",
+            "lower_tertile": 500,
+            "upper_tertile": 1500
+        },
+        {
+            "phase": 4,
+            "condition": "TB",
+            "lower_tertile": 3000,
+            "upper_tertile": 4000
+        }
+    ]
+}

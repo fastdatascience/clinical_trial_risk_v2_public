@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option java_package = "com.fds.fcnlp.fcnlp_tika_grpc.document_parser";
+option java_multiple_files = true;
+
+message DocumentParserRequest {
+    bytes file_content = 1;
+}
+
+message DocumentParserResponse {
+    map<int32, string> pages = 1;
+    map<string, string> metadata = 2;
+}
+
+service DocumentParserService {
+    rpc processDocument (DocumentParserRequest) returns (DocumentParserResponse);
+}

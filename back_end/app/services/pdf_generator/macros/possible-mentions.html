@@ -1,0 +1,13 @@
+{% macro create(context) %}
+    <div class="content-wrapper">
+        <h2 class="title-color">Possible mentions of {{ context.key_name }} in the document</h2>
+        {% for context_item in context["items"] %}
+            <div style="margin-bottom: 3px;">
+                <h3 class="text-bold">{{ context_item.title }}</h3>
+                {% for page in context_item.pages %}
+                    <p>{{ page }}</p>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+{% endmacro %}

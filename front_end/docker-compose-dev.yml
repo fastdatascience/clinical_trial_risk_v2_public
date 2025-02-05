@@ -1,0 +1,9 @@
+services:
+    front:
+        command: vite --host
+        environment:
+            NODE_ENV: development
+            WATCHPACK_POLLING: true
+        volumes:
+            - .:/app
+            - /app/node_modules/

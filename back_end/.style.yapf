@@ -1,0 +1,8 @@
+[style]
+based_on_style=pep8
+spaces_before_comment=4
+split_before_logical_operator=true
+BLANK_LINE_BEFORE_NESTED_CLASS_OR_DEF=true
+COALESCE_BRACKETS=true
+SPACES_AROUND_DICT_DELIMITERS=true
+COLUMN_LIMIT=180
