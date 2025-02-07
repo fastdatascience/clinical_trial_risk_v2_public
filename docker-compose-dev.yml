@@ -1,0 +1,19 @@
+services:
+    api:
+        command: hypercorn --bind 0.0.0.0:5000 --reload app.main:app # --reload does not include reloading the Celery worker
+        volumes:
+            - ./back_end:/app
+        environment:
+            STAGE: dev
+
+    celery-worker:
+        command: celery -b "redis://redis:6379" -A app.ct_core worker --concurrency=1 -l info
+
+    front:
+        command: vite --host
+        environment:
+            NODE_ENV: development
+            WATCHPACK_POLLING: true
+        volumes:
+            - ./front_end:/app
+            - /app/node_modules/
