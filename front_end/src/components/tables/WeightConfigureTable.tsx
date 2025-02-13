@@ -10,14 +10,21 @@ import {
     Input,
 } from "@material-tailwind/react";
 
-import { Content, SetAtom, Weights } from "../../utils/types";
+import {
+    Content,
+    CostRiskModel,
+    NestedCostRiskModel,
+    SetAtom,
+    Weights,
+} from "../../utils/types";
 import { SetStateAction, useState } from "react";
 import WeightProfileDeleteModal from "../modals/WeightProfileDeleteModal";
-import { FaCheck } from "react-icons/fa6";
+import { FaCheck, FaChevronDown, FaChevronUp } from "react-icons/fa6";
 import {
     createUserWeightProfiles,
     updateUserWeightProfile,
 } from "../../utils/services";
+import { updateNestedProperty } from "../../utils/utils";
 
 type WeightType = keyof Weights;
 
@@ -43,7 +50,17 @@ export function WeightConfigureTable({
     weightKey: WeightType;
 }>) {
     const [showModal, setShowModal] = useState<boolean>(false);
+    const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>(
+        {}
+    );
     const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
+
+    const toggleRow = (feature: string) => {
+        setExpandedRows((prev) => ({
+            ...prev,
+            [feature]: !prev[feature],
+        }));
+    };
 
     // TODO: add condition here
     const handleUpdateWeightProfile = async (
@@ -88,7 +105,7 @@ export function WeightConfigureTable({
     // handle change for all 3 weight profile types
     const handleCRMWeightChange = (
         profileIndex: number,
-        feature: string,
+        feature: string, // can br nested as well
         weightType: "cost" | "risk" | "name",
         value: number | string
     ) => {
@@ -104,11 +121,15 @@ export function WeightConfigureTable({
 
                 if (
                     weightType !== "name" &&
-                    profile?.weights?.cost_risk_models[feature]
+                    profile?.weights?.cost_risk_models
                 ) {
                     if (typeof value === "number") {
-                        profile.weights.cost_risk_models[feature][weightType] =
-                            value;
+                        updateNestedProperty(
+                            profile.weights.cost_risk_models,
+                            value,
+                            weightType,
+                            feature
+                        );
                     }
                 }
 
@@ -128,11 +149,15 @@ export function WeightConfigureTable({
 
                 if (
                     weightType !== "name" &&
-                    profile?.weights.cost_risk_models[feature]
+                    profile?.weights?.cost_risk_models
                 ) {
                     if (typeof value === "number") {
-                        profile.weights.cost_risk_models[feature][weightType] =
-                            value;
+                        updateNestedProperty(
+                            profile.weights.cost_risk_models,
+                            value,
+                            weightType,
+                            feature
+                        );
                     }
                 }
 
@@ -222,7 +247,7 @@ export function WeightConfigureTable({
     // TODO: update the payload based on new updated API
     const onSave = async () => {
         const updatedWeights = data?.map((profile) => ({
-            name: profile?.name,
+            name: profile.name,
             weights: profile?.weights,
         }));
 
@@ -233,6 +258,7 @@ export function WeightConfigureTable({
             const newWeightProfile = await createUserWeightProfiles(
                 updatedWeights[0]
             );
+
             if (newWeightProfile && isFiltered) {
                 setFilteredWeightProfiles((prevProfiles) => {
                     if (!prevProfiles?.length) return prevProfiles;
@@ -287,82 +313,136 @@ export function WeightConfigureTable({
         isDefault: boolean
     ) => {
         const { cost_risk_models } = weights;
-        return Object.keys(cost_risk_models)?.map((feature, index) => {
-            const { cost, risk } = cost_risk_models[feature];
-            const isLast = index === Object.keys(cost_risk_models).length - 1;
-            const rowClass = isLast
-                ? "p-4"
-                : "p-4 border-b border-blue-gray-50";
+
+        const renderRow = (
+            feature: string,
+            data: CostRiskModel | NestedCostRiskModel,
+            depth = 0,
+            parentFeature = ""
+        ): JSX.Element => {
+            const isNested =
+                typeof data === "object" &&
+                !("cost" in data) &&
+                !("risk" in data);
+            const isExpanded = expandedRows[feature];
+            const fullFeaturePath = parentFeature
+                ? `${parentFeature}.${feature}`
+                : feature;
 
             return (
-                <tr key={`feature-${feature}-${index}`}>
-                    <td className={rowClass}>
-                        <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="font-normal"
-                        >
-                            {feature}
-                        </Typography>
-                    </td>
-                    <td className={rowClass}>
-                        <input
-                            type="number"
-                            value={cost}
-                            min={0}
-                            onChange={(e) =>
-                                handleWeightChange(
-                                    profileIndex,
-                                    feature,
-                                    "cost",
-                                    parseFloat(e.target.value)
-                                )
-                            }
-                            className="border rounded p-1"
-                        />
-                    </td>
-                    <td className={rowClass}>
-                        <input
-                            type="number"
-                            value={risk}
-                            min={0}
-                            onChange={(e) =>
-                                handleWeightChange(
-                                    profileIndex,
-                                    feature,
-                                    "risk",
-                                    parseFloat(e.target.value)
-                                )
-                            }
-                            className="border rounded p-1"
-                        />
-                    </td>
-                    {!isDefault && (
-                        <td className="p-4">
-                            <Tooltip content="Save Sample size">
-                                {isUpdating[`feature-${feature}-${index}`] ? (
-                                    <Spinner className="h-5 w-5 text-text_secondary" />
-                                ) : (
+                /* Parent or Nested Row */
+                <>
+                    <tr
+                        key={`${feature}-${fullFeaturePath}-${depth}`}
+                        className={isExpanded ? "bg-blue-gray-50" : "border-b"}
+                    >
+                        {/* Feature Name with Expand/Collapse Icon */}
+                        <td>
+                            <div className="flex items-center">
+                                <Typography
+                                    variant="small"
+                                    color="black"
+                                    className="font-normal "
+                                >
+                                    {feature}
+                                </Typography>
+                                {isNested && (
                                     <IconButton
                                         variant="text"
                                         size="sm"
-                                        onClick={() =>
-                                            handleUpdateWeightProfile(
-                                                name,
-                                                feature,
-                                                weights
-                                            )
-                                        }
+                                        onClick={() => toggleRow(feature)}
+                                        className="mr-2"
                                     >
-                                        <FaCheck className="h-4 w-4 text-green_primary" />
+                                        {isExpanded ? (
+                                            <FaChevronUp size={12} />
+                                        ) : (
+                                            <FaChevronDown size={12} />
+                                        )}
                                     </IconButton>
                                 )}
-                            </Tooltip>
+                            </div>
                         </td>
-                    )}
-                </tr>
+                        {/* Cost and Risk Inputs (for non-nested properties) */}
+                        {!isNested && (
+                            <>
+                                <td className="p-4">
+                                    <input
+                                        type="number"
+                                        value={Number(data.cost)}
+                                        min={0}
+                                        onChange={(e) =>
+                                            handleWeightChange(
+                                                profileIndex,
+                                                fullFeaturePath,
+                                                "cost",
+                                                parseFloat(e.target.value)
+                                            )
+                                        }
+                                        className="border rounded p-1"
+                                    />
+                                </td>
+                                <td className="p-4">
+                                    <input
+                                        type="number"
+                                        value={Number(data.risk)}
+                                        min={0}
+                                        onChange={(e) =>
+                                            handleWeightChange(
+                                                profileIndex,
+                                                fullFeaturePath,
+                                                "risk",
+                                                parseFloat(e.target.value)
+                                            )
+                                        }
+                                        className="border rounded p-1"
+                                    />
+                                </td>
+
+                                {!isDefault && (
+                                    <td className="p-4">
+                                        <Tooltip content="Save Weights">
+                                            {isUpdating[fullFeaturePath] ? (
+                                                <Spinner className="h-5 w-5 text-text_secondary" />
+                                            ) : (
+                                                <IconButton
+                                                    variant="text"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        handleUpdateWeightProfile(
+                                                            name,
+                                                            fullFeaturePath,
+                                                            weights
+                                                        )
+                                                    }
+                                                >
+                                                    <FaCheck className="h-4 w-4 text-green_primary" />
+                                                </IconButton>
+                                            )}
+                                        </Tooltip>
+                                    </td>
+                                )}
+                            </>
+                        )}
+                    </tr>
+                    {/* Render Nested Rows if Expanded */}
+                    {isNested &&
+                        isExpanded &&
+                        Object.entries(data).map(
+                            ([nestedFeature, nestedData]) =>
+                                renderRow(
+                                    nestedFeature,
+                                    nestedData,
+                                    depth + 1,
+                                    fullFeaturePath
+                                )
+                        )}
+                </>
             );
-        });
+        };
+        // Render all rows
+        return Object.entries(cost_risk_models).map(([feature, data]) =>
+            renderRow(feature, data)
+        );
     };
 
     const renderRTRows = (
@@ -383,7 +463,6 @@ export function WeightConfigureTable({
         isDefault: boolean
     ) => {
         const { risk_thresholds } = weights;
-        const { low, high } = risk_thresholds;
         const rowClass = "p-4 border-b border-blue-gray-50";
 
         return (
@@ -391,7 +470,7 @@ export function WeightConfigureTable({
                 <td className={rowClass}>
                     <input
                         type="number"
-                        value={low}
+                        value={risk_thresholds?.low}
                         min={0}
                         onChange={(e) =>
                             handleRiskThresholdChange(
@@ -406,7 +485,7 @@ export function WeightConfigureTable({
                 <td className={rowClass}>
                     <input
                         type="number"
-                        value={high}
+                        value={risk_thresholds?.high}
                         min={0}
                         onChange={(e) =>
                             handleRiskThresholdChange(

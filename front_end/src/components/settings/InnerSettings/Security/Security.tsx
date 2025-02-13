@@ -1,6 +1,6 @@
 const Security: React.FC = () => {
     return (
-        <div className="flex flex-col p-10 flex-wrap space-y-10 w-full">
+        <div className="flex flex-col p-5 flex-wrap space-y-10 w-full">
             <h3 className="font-poppins text-2xl font-semibold">Password</h3>
             <div className="flex flex-col space-y-4 flex-wrap">
                 <h3 className="font-poppins text-sm font-semibold">

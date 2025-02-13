@@ -2,7 +2,9 @@ import pathlib
 import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from functools import wraps
 from time import time
+from typing import Any, Callable, TypeVar
 from uuid import uuid4
 
 import clinicaltrials.core as ct_core
@@ -268,3 +270,17 @@ async def create_or_update_tag_counter(redis: RedisAsync, x_tag: str | None = No
         count = await redis.incr(x_tag)
 
     return x_tag, count
+
+
+# todo maybe move this somewhere else
+
+
+def use_gzip(func: Callable[..., Any]):
+    """Decorator to mark a route for GZIP compression"""
+
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        return await func(*args, **kwargs)
+
+    setattr(wrapper, "__enable_gzip", True)
+    return wrapper

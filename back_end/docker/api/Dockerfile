@@ -30,28 +30,35 @@ RUN . /venv/bin/activate; \
     && $POETRY_HOME/bin/poetry install --only main --no-interaction \
     && $POETRY_HOME/bin/poetry update clinicaltrials
 
+# Copy app
+COPY . .
+
+# Download models
+RUN mkdir /tmp/models/
+RUN . /venv/bin/activate; \
+    $POETRY_HOME/bin/poetry run python cli --download-models --download-path /tmp/models/
+
 # ---------------------------------------------------------
 
 FROM python:3.11-slim AS final
 
-# Copy environment from builder stage
-COPY --from=builder /venv /venv
-
-# Set environment path
-ENV PATH=/venv/bin:${PATH}
-
 # Install wkhtmltopdf
 RUN apt-get update && apt-get install -y wkhtmltopdf
-
-# Set work dir
-WORKDIR /app
 
 # Set user
 USER nobody
 
-# Copy classifiers
-COPY ./classifiers /tmp
+# Set work dir
+WORKDIR /app
 
-# Copy app
-COPY --chown=nobody:nogroup hypercorn.toml .
-COPY --chown=nobody:nogroup . .
+# Copy environment from builder stage
+COPY --from=builder /venv /venv
+
+# Copy app from builder stage
+COPY --from=builder --chown=nobody:nogroup /app/ .
+
+# Copy models from builder stage
+COPY --from=builder --chown=nobody:nogroup /tmp/models/ /tmp/
+
+# Set environment path
+ENV PATH=/venv/bin:${PATH}

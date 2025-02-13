@@ -354,7 +354,7 @@ def db_insert_weight_profile() -> None:
     """
 
     with SessionLocal() as session:
-        weight_profile_name = "Default Weight Profile"
+        weight_profile_name = "Weight Profile v2"
 
         # Insert record if it doesn't exist - Check by name
         exists: bool = session.query(WeightProfile.name).filter_by(name=weight_profile_name).first() is not None
@@ -368,7 +368,7 @@ def db_insert_weight_profile() -> None:
             else:
                 default = True
 
-            with open("schema/weight_schema.json", "r") as weight_schema_file:
+            with open("schema/weight_schema_v2.json", "r") as weight_schema_file:
                 weight_schema: dict = json.loads(weight_schema_file.read())
 
             weight_profile = WeightProfile(name=weight_profile_name, weights=weight_schema, default=default)

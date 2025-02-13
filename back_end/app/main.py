@@ -1,9 +1,11 @@
 import asyncio
+import gzip
+from io import BytesIO
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, StreamingResponse
 from hypercorn import Config
 from hypercorn.asyncio import serve
 from pydantic import ValidationError
@@ -42,29 +44,40 @@ app.add_middleware(
 )
 
 
-class ExcludeStreamGZipMiddleware(GZipMiddleware):
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
+@app.middleware("http")
+async def gzip_middleware(request: Request, call_next):
+    """
+    Middleware to gzip responses from endpoints marked with `__enable_gzip`
+    """
+    response = await call_next(request)
 
-        headers_dict = {k.lower(): v for k, v in scope["headers"]}
-        accept_encoding = headers_dict.get(b"accept-encoding", b"").decode("utf-8")
-        content_type = headers_dict.get(b"content-type", b"").decode("utf-8")
+    # * Check if the route is marked for GZIP compression
+    endpoint = request.scope.get("endpoint")
+    if endpoint and getattr(endpoint, "__enable_gzip", False):
+        # * Collect the original response body (non-streaming only)
+        original_body = b""
+        async for chunk in response.body_iterator:
+            original_body += chunk
 
-        if "text/event-stream" in content_type:
-            await self.app(scope, receive, send)
-            return
+        # * Compress the response using gzip
+        gzip_buffer = BytesIO()
+        with gzip.GzipFile(mode="wb", fileobj=gzip_buffer) as gzip_file:
+            gzip_file.write(original_body)
+        compressed_content = gzip_buffer.getvalue()
 
-        # * If the client did NOT request gzip, skip compression
-        if "gzip" not in accept_encoding.lower():
-            await self.app(scope, receive, send)
-            return
+        # * Create a new Response with compressed content
+        new_response = Response(
+            content=compressed_content,
+            status_code=response.status_code,
+            headers=dict(response.headers),
+            media_type=response.media_type,
+        )
+        # * Add GZIP-specific headers
+        new_response.headers["Content-Encoding"] = "gzip"
+        new_response.headers["Content-Length"] = str(len(compressed_content))
+        return new_response
 
-        await super().__call__(scope, receive, send)
-
-
-# app.add_middleware(ExcludeStreamGZipMiddleware, minimum_size=1000)
+    return response
 
 
 # * Custom exception handler

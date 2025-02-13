@@ -3,13 +3,17 @@ import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { EMAIL_REGEX, formulaLookup } from "./constants";
 import {
     HeatmapCell,
-    HeatmapData,
+    HeatMapData,
     Content,
     Metadata,
     Option,
     Result,
     UserProfileTree,
     ITableRow,
+    CostRiskModel,
+    NestedCostRiskModel,
+    Weights,
+    ITemplateDocument,
 } from "./types";
 
 GlobalWorkerOptions.workerSrc = "./pdf.worker.min.mjs";
@@ -211,7 +215,7 @@ export const processMetadataAndResult = (
             console.error(`'${key}' not found in resultObject`);
             return metadata;
         }
-        const data = result[key as keyof Result] as Metadata;
+        const data = result[key as keyof Result] as unknown as Metadata;
 
         if (data?.prediction !== null) {
             return { ...metadata, prediction: data.prediction };
@@ -238,7 +242,7 @@ export const generateDropdownOptions = (
     }));
 };
 
-// Using this for now
+// Using this for now (TODO: make it scalable later)
 export const generateOptions = (data: string[]): Option[] => {
     return data?.map((content) => ({
         label: content,
@@ -246,9 +250,18 @@ export const generateOptions = (data: string[]): Option[] => {
     }));
 };
 
+export const generateOptionsForTemplates = (
+    data: ITemplateDocument[]
+): Option[] => {
+    return data?.map((content) => ({
+        label: content.original_document_name,
+        value: content.id,
+    }));
+};
+
 // this util function will utilise pages, annotations and normalize the data for heatmap
-export function normalizeDataForHeatmap(
-    data: HeatmapData,
+export function normalizeDataForHeatmap<T extends number[]>(
+    data: HeatMapData<T>,
     rangeSize: number = 10
 ): HeatmapCell[] {
     if (!data?.pages) {
@@ -256,24 +269,30 @@ export function normalizeDataForHeatmap(
     }
 
     const { pages } = data;
+    const totalPages = Object.values(pages).flat().length;
 
     const heatmapCells: HeatmapCell[] = [];
 
-    // First, Iterate over the keys in the pages object (Y-axis labels)
     Object.keys(pages).forEach((label) => {
         const pageArray = pages[label];
         const pageCountMap: { [range: string]: number } = {};
 
-        // Count the occurrences of each page number
-        pageArray?.forEach((pageIndex) => {
+        pageArray?.forEach((pageIndex: number) => {
             const pageNo = pageIndex + 1;
-            const rangeStart =
-                Math.floor((pageNo - 1) / rangeSize) * rangeSize + 1; // Calculate range start
-            const rangeEnd = rangeStart + rangeSize - 1; // Calculate range end
-            const xLabel = `${rangeStart}-${rangeEnd}`;
+            let xLabel: string;
+
+            // Using range blocks only for documents with more than 100 pages
+            if (totalPages > 100) {
+                const rangeStart =
+                    Math.floor((pageNo - 1) / rangeSize) * rangeSize + 1;
+                const rangeEnd = rangeStart + rangeSize - 1;
+                xLabel = `${rangeStart}-${rangeEnd}`;
+            } else {
+                xLabel = `Page ${pageNo}`;
+            }
+
             pageCountMap[xLabel] = (pageCountMap[xLabel] || 0) + 1;
 
-            // Create heatmap entry for each page and label combination
             heatmapCells.push({
                 x: xLabel,
                 y: label,
@@ -364,3 +383,110 @@ export const getProfilePictureUrl = (
 
     return `https://d1zouhzy7fucw3.cloudfront.net/images/${profilePicture}`;
 };
+
+// Helper function to update nested properties
+export const updateNestedProperty = (
+    obj: Record<string, CostRiskModel | NestedCostRiskModel>,
+    value: number,
+    weightType: "cost" | "risk",
+    propPath: string
+) => {
+    const [head, ...rest] = propPath.split(".");
+
+    const target = obj[head];
+    if (!target) return;
+
+    if (rest.length === 0) {
+        target[weightType] = value;
+    } else if (typeof target === "object") {
+        updateNestedProperty(
+            target as Record<string, CostRiskModel | NestedCostRiskModel>,
+            value,
+            weightType,
+            rest.join(".")
+        );
+    }
+};
+
+/**
+ * Utility function to get the cost value from weightProfile
+ *
+ * @param feature - feature name
+ * @param costRiskModels - model
+ * @returns the cost value from weightProfiles
+ */
+
+function getWeightFromProfile(
+    weightType: "cost" | "risk",
+    feature: string,
+    costRiskModels: Record<string, CostRiskModel | NestedCostRiskModel>
+): number | undefined {
+    // Split the feature into parts (e.g., 'regimen=doses_per_day' -> ['regimen', 'doses_per_day'])
+    const featureParts = feature.split("=");
+    let currentLevel: CostRiskModel | NestedCostRiskModel | undefined =
+        costRiskModels;
+
+    // Traverse the nested structure
+    for (const part of featureParts) {
+        if (
+            currentLevel &&
+            typeof currentLevel === "object" &&
+            !(weightType in currentLevel)
+        ) {
+            // Type guard to ensure currentLevel is NestedCostRiskModel
+            currentLevel = (currentLevel as NestedCostRiskModel)[part];
+        } else {
+            // If the feature part doesn't exist, check for a 'base' property
+            if (
+                currentLevel &&
+                typeof currentLevel === "object" &&
+                "base" in currentLevel
+            ) {
+                currentLevel = (currentLevel as NestedCostRiskModel).base;
+            } else {
+                return undefined; // No match found
+            }
+        }
+    }
+
+    // If we reach a CostRiskModel, return its cost/risk
+    if (currentLevel && weightType in currentLevel) {
+        return (currentLevel as CostRiskModel)[weightType];
+    }
+
+    return undefined; // No cost found
+}
+
+/**
+ * Utility function to transform the data for table
+ *
+ * @param tableRows
+ * @param weightProfiles
+ * @returns wights from weighProfiles
+ */
+
+export const transformDataForTable = (
+    weightType: "cost" | "risk",
+    tableRows: ITableRow[],
+    weightProfiles: Weights
+) => {
+    const costRiskModels = weightProfiles?.cost_risk_models;
+    return tableRows?.map((row) => {
+        const weight_for_cost_risk_table = getWeightFromProfile(
+            weightType,
+            row.feature,
+            costRiskModels
+        );
+
+        const updatedWeight = weight_for_cost_risk_table ?? row.weight;
+
+        return {
+            ...row,
+            weight: updatedWeight,
+        };
+    });
+};
+
+export function isNumeric(value: string) {
+    return /^-?\d+(\.\d+)?$/.test(value);
+}

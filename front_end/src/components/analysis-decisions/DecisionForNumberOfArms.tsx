@@ -1,14 +1,13 @@
 import React from "react";
-import { Sap } from "../../utils/types";
+import { NumArms } from "../../utils/types";
 import { normalizeDataForHeatmap } from "../../utils/utils";
 import Heatmap from "../charts/Heatmap";
 
-const DecisionForNumberOfArms: React.FC<{ num_arms: Sap | undefined }> = ({
+const DecisionForNumberOfArms: React.FC<{ num_arms: NumArms | undefined }> = ({
     num_arms,
 }) => {
-    const heatmapGrid = normalizeDataForHeatmap(num_arms!, 15);
-
     if (!num_arms) return null;
+    const heatmapGrid = normalizeDataForHeatmap(num_arms, 15);
 
     return (
         <div className="flex flex-col justify-center items-center mt-3 mb-3  w-full">
@@ -19,7 +18,7 @@ const DecisionForNumberOfArms: React.FC<{ num_arms: Sap | undefined }> = ({
             </p>
 
             <div className="flex w-full justify-center items-center">
-                <Heatmap width={700} height={500} data={heatmapGrid} />
+                <Heatmap data={heatmapGrid} />
             </div>
         </div>
     );

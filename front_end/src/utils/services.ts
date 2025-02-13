@@ -9,7 +9,6 @@ import {
     SetAtom,
     IMetaData,
     Metadata,
-    IModuleWeight,
     IDefaultWeightProfile,
     IWeightProfile,
     Content,
@@ -17,12 +16,13 @@ import {
     IPlatformMetadata,
     IHistoryRun,
     ApiResponse,
+    ITemplateDocument,
 } from "./types";
 import { API_V1, authHeader, network } from "./network";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { SetStateAction } from "jotai";
 import { PDFDocumentProxy } from "pdfjs-dist";
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 
 // ======> auth services <======
 export const signup = async (payload: UserType): Promise<ApiResponse> => {
@@ -35,15 +35,11 @@ export const signup = async (payload: UserType): Promise<ApiResponse> => {
 };
 
 export const login = async (email: string, password: string) => {
-    try {
-        const loginResponse = await network().post(`/${API_V1}/auth/login`, {
-            email,
-            password,
-        });
-        return loginResponse;
-    } catch (error) {
-        return error as AxiosError;
-    }
+    const loginResponse = await network().post(`/${API_V1}/auth/login`, {
+        email,
+        password,
+    });
+    return loginResponse;
 };
 
 export const loginSignupWithGoogle = async (
@@ -64,19 +60,12 @@ export const loginSignupWithGoogle = async (
 export const verifyEmail = async (authData: UserAuthType) => {
     const { payload, otp, type } = authData;
 
-    try {
-        const verifyEmailResponse = await network().post(
-            `/${API_V1}/auth/verify`,
-            {
-                payload,
-                otp,
-                type,
-            }
-        );
-        return verifyEmailResponse;
-    } catch (error) {
-        return error;
-    }
+    const verifyEmailResponse = await network().post(`/${API_V1}/auth/verify`, {
+        payload,
+        otp,
+        type,
+    });
+    return verifyEmailResponse;
 };
 export const resendOTP = async (authData: UserAuthType) => {
     const { payload, type } = authData;
@@ -127,25 +116,16 @@ export const recoverPassword = async ({
 export const uploadFile = async (file: File) => {
     const formData = new FormData();
     formData.append("document", file);
-
-    try {
-        const resp = await network().post<ServerResponseV1<IDocument>>(
-            `/${API_V1}/documents`,
-            formData,
-            {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            }
-        );
-        const data = {
-            status: resp.status,
-            data: resp.data,
-        };
-        return data;
-    } catch (error) {
-        return error;
-    }
+    const response = await network().post<ServerResponseV1<IDocument>>(
+        `/${API_V1}/documents`,
+        formData,
+        {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        }
+    );
+    return response;
 };
 
 export const getRunStatus = async (
@@ -315,6 +295,32 @@ export const deleteDocument = async (docId: number) => {
         return error;
     }
 };
+
+export const getPublicDocuments = async () => {
+    const response = await network().get<ServerResponseV1<ITemplateDocument[]>>(
+        `/${API_V1}/documents/p/templates`
+    );
+    return response;
+};
+
+export const getPublicDocumentRunResult = async (template_id: number) => {
+    const headers = authHeader() as Record<string, string>;
+
+    if (Object.entries(headers).length < 1) {
+        console.warn("Headers not set");
+        return;
+    }
+
+    const response = await network().get<ServerResponseV1<IHistoryRun>>(
+        `${
+            import.meta.env.VITE_API_URL
+        }/${API_V1}/documents/p/templates/${template_id}`,
+        { headers: { ...headers } }
+    );
+
+    return response;
+};
+
 // ====> document CRUD services ended <======
 
 // ====> user services <======
@@ -378,7 +384,7 @@ export const deleteUserAccount = async () => {
 
 // ====> weight profile services <======
 export const getAllDefaultWeightProfiles = async (
-    setModuleWeights: SetAtom<[SetStateAction<IModuleWeight | object>], void>,
+    setModuleWeights: SetAtom<[SetStateAction<Weights | undefined>], void>,
     setWeightProfiles: SetAtom<[SetStateAction<Content[] | undefined>], void>
 ): Promise<IDefaultWeightProfile> => {
     const response = await network().get<
@@ -393,7 +399,7 @@ export const getAllDefaultWeightProfiles = async (
                 ...acc,
                 ...content.weights,
             };
-        }, {});
+        }, {} as Weights);
 
         setModuleWeights(weights);
         return data;
@@ -420,7 +426,7 @@ export const getUserWeightProfiles = async (
 };
 
 export const getWeightProfiles = async (
-    setModuleWeights: SetAtom<[SetStateAction<IModuleWeight | object>], void>,
+    setModuleWeights: SetAtom<[SetStateAction<Weights | undefined>], void>,
     setWeightProfiles: SetAtom<[SetStateAction<Content[] | undefined>], void>
 ): Promise<Content[] | undefined> => {
     const userWeights = await getUserWeightProfiles(setWeightProfiles);
@@ -439,11 +445,20 @@ export const getWeightProfiles = async (
 };
 
 export const createUserWeightProfiles = async (
-    weights: IWeightProfile
+    weight_profile: IWeightProfile
 ): Promise<Content> => {
+    const {
+        name,
+        weights: { cost_risk_models, risk_thresholds, sample_size_tertiles },
+    } = weight_profile;
     const response = await network().post<ServerResponseV1<Content>>(
         `/${API_V1}/weight-profiles/users`,
-        weights
+        {
+            name,
+            cost_risk_models,
+            risk_thresholds,
+            sample_size_tertiles,
+        }
     );
 
     if (response?.status === 201) {
@@ -467,7 +482,7 @@ export const deleteUserWeightProfile = async (
 
 export const updateUserWeightProfile = async (
     id: number | undefined,
-    weights: IWeightProfile
+    weights: unknown
 ): Promise<IDefaultWeightProfile> => {
     const response = await network().patch<
         ServerResponseV1<IDefaultWeightProfile>

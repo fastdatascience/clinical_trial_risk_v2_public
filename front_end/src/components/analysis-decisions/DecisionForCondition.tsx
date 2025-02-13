@@ -6,9 +6,9 @@ import { normalizeDataForHeatmap } from "../../utils/utils";
 const DecisionForCondition: React.FC<{ condition: Condition | undefined }> = ({
     condition,
 }) => {
-    const heatmapGrid = normalizeDataForHeatmap(condition!);
-
     if (!condition) return null;
+
+    const heatmapGrid = normalizeDataForHeatmap(condition);
 
     return (
         <div className="flex flex-col w-full justify-center items-center mt-3">
@@ -25,7 +25,7 @@ const DecisionForCondition: React.FC<{ condition: Condition | undefined }> = ({
                     Graph of key CONDITION related terms by page number in
                     document.
                 </h3>
-                <Heatmap width={700} height={500} data={heatmapGrid} />
+                <Heatmap data={heatmapGrid} />
             </div>
         </div>
     );

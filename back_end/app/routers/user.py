@@ -14,7 +14,7 @@ from app.models.subscription.subscription_type import SubscriptionType
 from app.models.user.base import User, UserUpdateRequest, UserWithRoles
 from app.models.user.role import RoleEnum
 from app.models.user.user_subscription import UserSubscription
-from app.resources import get_db, get_storage_provider, get_user_with_roles
+from app.resources import get_db, get_storage_provider, get_user_with_roles, is_demo_account
 from app.services.storage_provider import StorageProvider
 from app.utils import serialize_sqlmodel, update_instance_from_dict
 
@@ -97,9 +97,13 @@ async def delete_user(
     user: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER])),
     session: Session = Depends(get_db),
     storage_client: StorageProvider = Depends(get_storage_provider),
+    demo_account: bool = Depends(is_demo_account),
 ):
+    if demo_account:
+        return ServerResponse(status_code=204)
+
     # Get db user
-    db_user: User = session.exec(select(User).where(User.id == user.user.id)).first()
+    db_user: User | None = session.exec(select(User).where(User.id == user.user.id)).first()
     if not db_user:
         return ServerResponse(status_code=204)
 

@@ -147,23 +147,9 @@ are in the file. These contain the default values used by Docker for these servi
 environment variables as needed. After the containers were created, you can change the database user's password if
 needed.
 
-### 3 Download classifiers
+### 3. Containers
 
-```bash
-# Create the dir classifiers at the root of the project
-cd ~/clinical_trials_backend
-mkdir classifiers
-
-# Install the core package
-pip install ./clinical_trials_core
-
-# Download classifiers
-python3 cli --download-models --download-path /home/[YOUR_USERNAME]/clinical_trials_backend/classifiers
-```
-
-### 4. Containers
-
-#### 4.1 Build and start containers
+#### 3.1 Build and start containers
 
 The command below will build, (re)create, attach services to containers, and finally start all containers. The
 application will be accessible at ` http://127.0.0.1:5000`.
@@ -180,7 +166,7 @@ Or run a development server:
 docker compose -f docker-compose.yml -f docker-compose-dev.yml up
 ```
 
-#### 4.2 Stop containers
+#### 3.2 Stop containers
 
 The command below still stop all running containers.
 
@@ -188,7 +174,7 @@ The command below still stop all running containers.
 docker compose stop
 ```
 
-#### 4.3 Start containers
+#### 3.3 Start containers
 
 The command below will start all containers.
 
@@ -196,7 +182,7 @@ The command below will start all containers.
 docker compose start
 ```
 
-#### 4.4 Remove containers
+#### 3.4 Remove containers
 
 The command below still stop and remove all containers (also networks).
 Optionally, you can add `--volumes` to remove the volumes as well.

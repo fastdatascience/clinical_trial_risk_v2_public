@@ -4,7 +4,6 @@ export { default as TextInput } from "./TextInput";
 export { default as SelectInput } from "./SelectInput";
 export { default as CustomTextField } from "./CustomTextField";
 export { default as MultiSelectInput } from "./MultiSelect";
-export { default as Tabs } from "./Tabs";
 export { default as Footer } from "./Footer";
 export { default as AuthLayoutHeader } from "./AuthLayoutHeader";
 export { default as NoProtocolUploaded } from "./NoProtocolUploaded";

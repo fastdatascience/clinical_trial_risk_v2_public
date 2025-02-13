@@ -9,8 +9,9 @@ import { Option, Weights } from "../../../../utils/types";
 import { getWeightProfiles } from "../../../../utils/services";
 import { generateDropdownOptions } from "../../../../utils/utils";
 import { Card, Spinner } from "@material-tailwind/react";
-import { SelectInput, Tabs } from "../../../common";
+import { SelectInput } from "../../../common";
 import { weightTabItems } from "../../../../utils/constants";
+import { CustomTabs } from "../../../common/Tabs";
 
 const WeightProfiles: React.FC = () => {
     const [, setModuleWeight] = useAtom(moduleWeightAtom);
@@ -57,11 +58,11 @@ const WeightProfiles: React.FC = () => {
         const weights = filteredWightProfiles?.reduce((acc, weights) => {
             return {
                 ...acc,
-                ...weights.weights.cost_risk_models,
+                ...weights.weights,
             };
         }, {} as Weights);
 
-        setModuleWeight(weights?.cost_risk_models || {});
+        setModuleWeight(weights);
     };
 
     const onSelectProfile = (profile: string) => {
@@ -70,7 +71,7 @@ const WeightProfiles: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col space-y-8 p-10 ">
+        <div className="flex flex-col space-y-8 p-5">
             <div className="flex flex-col gap-y-1">
                 <h3 className="text-2xl font-poppins font-semibold flex flex-wrap">
                     Configure Weight Profile
@@ -100,10 +101,11 @@ const WeightProfiles: React.FC = () => {
                             />
                         </div>
                     </header>
-                    <Tabs
+                    <CustomTabs
+                        value="Cost Risk Models"
                         tabItems={weightTabItems}
                         data={weightProfiles}
-                        tabListClassName="bg-green_primary p-5  font-normal text-white md:text-base font-semibold text-base"
+                        tabListClassName="bg-green_primary rounded-none"
                     />
                 </Card>
             )}

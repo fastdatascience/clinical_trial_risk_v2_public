@@ -161,6 +161,21 @@ const FileItem: React.FC<IFileItemProps> = ({ document, setDocuments }) => {
                             </Typography>
 
                             <div className="flex justify-between">
+                                <Button
+                                    disabled={isOpenCdn}
+                                    size="sm"
+                                    variant="text"
+                                    className=" items-center inline-flex gap-2"
+                                    onClick={() => getCDNUrl(document.id)}
+                                >
+                                    {isOpenCdn && (
+                                        <Spinner
+                                            color="green"
+                                            className="h-5 w-5"
+                                        />
+                                    )}
+                                    View file
+                                </Button>
                                 <Link
                                     to={{
                                         pathname: "/dashboard",
@@ -180,21 +195,6 @@ const FileItem: React.FC<IFileItemProps> = ({ document, setDocuments }) => {
                                         <FaArrowRight />
                                     </Button>
                                 </Link>
-                                <Button
-                                    disabled={isOpenCdn}
-                                    size="sm"
-                                    variant="text"
-                                    className=" items-center inline-flex gap-2"
-                                    onClick={() => getCDNUrl(document.id)}
-                                >
-                                    {isOpenCdn && (
-                                        <Spinner
-                                            color="green"
-                                            className="h-5 w-5"
-                                        />
-                                    )}
-                                    View file
-                                </Button>
                             </div>
                         </>
                     )}

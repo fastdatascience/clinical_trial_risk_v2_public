@@ -27,7 +27,7 @@ from app.helpers import (
 from app.log_config import logger
 from app.models.analysis_report.analysis_report import AnalysisReport
 from app.models.document.document import Document
-from app.models.document.repo import get_all_template_documents
+from app.models.document.repo import get_a_document_template_run_result, get_all_template_documents
 from app.models.server_response import ServerResponse
 from app.models.subscription.subscription_attribute import SubscriptionAttribute
 from app.models.subscription.subscription_type import SubscriptionType
@@ -49,6 +49,7 @@ from app.resources import (
     get_storage_provider,
     get_user_with_roles,
     is_demo_account,
+    use_gzip,
 )
 from app.schemas import AnalysisReportData as AnalysisReportDataSchema
 from app.security import decode_sha256
@@ -395,6 +396,7 @@ async def get_document_process_run_status(
 
 
 @router.get(path="/{document_id}/run")
+@use_gzip
 async def get_document_process_run(
     document_id: int,
     user: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER, RoleEnum.GUEST])),
@@ -450,10 +452,13 @@ async def get_a_document_url(
     user: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER])),
     storage_client: StorageProvider = Depends(get_storage_provider),
 ):
-    document = session.exec(select(Document).where(Document.id == document_id, Document.user_id == user.user.id)).first()
+    document = session.exec(select(Document).where(Document.id == document_id)).first()
 
     if document is None:
         return ServerResponse(error="Document not found", status_code=404)
+
+    if not document.template and document.user_id != user.user.id:
+        return ServerResponse(error="Unauthorized access to the document", status_code=403)
 
     return ServerResponse(
         data={
@@ -484,10 +489,13 @@ async def get_a_document_object(
     except ValueError:
         return ServerResponse(error="Invalid expiry time", status_code=400)
 
-    document = session.exec(select(Document).where(Document.id == document_id, Document.user_id == user_id)).first()
+    document = session.exec(select(Document).where(Document.id == document_id)).first()
 
     if document is None:
         return ServerResponse(error="Document not found", status_code=404)
+
+    if not document.template and document.user_id != user_id:
+        return ServerResponse(error="Unauthorized access to the document", status_code=403)
 
     user_resource_identifier = cast(User, session.exec(select(User).where(User.id == user_id)).first()).user_resource_identifier
 
@@ -503,20 +511,58 @@ async def get_a_document_object(
     return Response(content=file_content, media_type=media_type, headers={"Content-Disposition": f"inline; filename={document.system_assigned_name}"})
 
 
-@router.get(path="/public/templates")
+@router.get(path="/p/templates")
+@use_gzip
 async def get_all_document_templates(
+    _: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER, RoleEnum.GUEST])),
     session: Session = Depends(get_db),
 ):
     template_documents = get_all_template_documents(session=session)
     return ServerResponse(data=template_documents)
 
 
-@router.get(path="/public/templates/{document_id}")
+@router.get(path="/p/templates/{document_id}")
+@use_gzip
 async def get_document_template_run_result(
+    document_id: int,
+    user: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER, RoleEnum.GUEST])),
     session: Session = Depends(get_db),
+    metadata=Depends(get_ct_core_metadata_list),
+    storage_client: StorageProvider = Depends(get_storage_provider),
 ):
-    template_documents = get_all_template_documents(session=session)
-    return ServerResponse(data=template_documents)
+    result = get_a_document_template_run_result(session=session, document_id=document_id)
+
+    if result is None:
+        return ServerResponse(error="No document found", status_code=404)
+
+    document, resource_usage = result
+
+    if resource_usage is None or resource_usage.result is None:
+        logger.warning(f"Template document {document.id} does not have inference data")
+        return ServerResponse(error="No document found", status_code=404)
+
+    # * Get weight profile
+    weight_profile = get_default_weight_profiles(session=session)
+
+    cost_nodes, risk_nodes = transform_data_for_rac(metadata=metadata, result=resource_usage.result, module_weight=weight_profile, selected_param={})
+    total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes, module_weight=weight_profile)
+    trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(ct_node=risk_nodes, module_weight=weight_profile)
+
+    return ServerResponse(
+        data={
+            "document": {
+                **document.model_dump(),
+                "cdn_path": storage_client.get_internal_cdn_url(user_id=user.user.id, object_id=document.id),
+            },
+            "result": resource_usage.result,
+            "trial_cost_table": cost_nodes,
+            "trial_risk_table": risk_nodes,
+            "cost": {"total_cost": total_cost, "total_cost_per_participant": total_cost_per_participant},
+            "trial_risk_score": trial_risk_level,
+            "trial_risk_score_numeric": trial_risk_score_numeric,
+            "weight_profile": weight_profile.model_dump(exclude={"weights"}),
+        }
+    )
 
 
 @router.get(path="/{document_id}/exports/pdf")

@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PasswordInput, TextInput } from "../common";
 import { login } from "../../utils/services";
-import { AxiosResponse } from "axios";
+import { AxiosError } from "axios";
 import { useAtom } from "jotai";
 import {
     isDemoUserAtom,
+    openEmailVerificationAtom,
     userAccessTokenAtom,
+    userAtom,
     userProfileAtom,
     userRefreshTokenAtom,
 } from "../../lib/atoms";
@@ -28,6 +30,9 @@ const Login: React.FC = () => {
     const [, setUserProfile] = useAtom(userProfileAtom);
     const [, setUserAccessToken] = useAtom(userAccessTokenAtom);
     const [, setUserRefreshToken] = useAtom(userRefreshTokenAtom);
+    const [, setOpenEmailVerification] = useAtom<boolean>(
+        openEmailVerificationAtom
+    );
 
     const [isLoading, setIsLoading] = useState<{
         as_guest: boolean;
@@ -36,18 +41,17 @@ const Login: React.FC = () => {
         as_guest: false,
         as_user: false,
     });
-    const [loginInfo, setLoginInfo] = useState({
-        email: "",
-        password: "",
-    });
+
+    const [user, setUser] = useAtom(userAtom);
+
     const [error, setError] = useState<boolean>();
     const [errorMessage, setErrorMessage] = useState<string>("");
-    const { email, password } = loginInfo;
+    const { email, password } = user;
 
     const handleChange = (e: React.FormEvent<HTMLInputElement>) => {
         const { name, value } = e.target as HTMLInputElement;
-        setLoginInfo({
-            ...loginInfo,
+        setUser({
+            ...user,
             [name]: value,
         });
     };
@@ -83,12 +87,10 @@ const Login: React.FC = () => {
     };
 
     const loginAsUser = async () => {
+        if (!email || !password) return;
         try {
             setIsLoading((prev) => ({ ...prev, as_user: true }));
-            const loginResponse = (await login(
-                email,
-                password
-            )) as AxiosResponse;
+            const loginResponse = await login(email, password);
 
             if (loginResponse?.status === 200) {
                 if (loginResponse?.data?.data) {
@@ -109,7 +111,13 @@ const Login: React.FC = () => {
                 setErrorMessage("Invalid Credentials");
             }
         } catch (error) {
-            console.error(error);
+            console.error("Failed to login", error);
+            if (error instanceof AxiosError) {
+                setErrorMessage(error.response?.data?.error);
+                if (error.response?.status === 401) {
+                    setOpenEmailVerification(true);
+                }
+            }
         } finally {
             setIsLoading((prev) => ({ ...prev, as_user: false }));
         }
@@ -119,10 +127,7 @@ const Login: React.FC = () => {
         try {
             setIsLoading((prev) => ({ ...prev, as_guest: true }));
 
-            const loginResponse = (await login(
-                "demo@fastdatascience.com",
-                ""
-            )) as AxiosResponse;
+            const loginResponse = await login("demo@fastdatascience.com", "");
 
             if (loginResponse?.status === 200) {
                 if (loginResponse?.data?.data) {
@@ -183,13 +188,14 @@ const Login: React.FC = () => {
                     className="mb-4 flex flex-col gap-5"
                 >
                     <TextInput
-                        name={"email"}
+                        name="email"
                         inputType={"email"}
                         label="Email"
                         initialValue={email}
                         handleChange={handleChange}
                         error={error}
                         errorMessage={errorMessage}
+                        onBlur={() => setErrorMessage("")}
                     />
                     <PasswordInput
                         name="password"
@@ -198,6 +204,7 @@ const Login: React.FC = () => {
                         handleChange={handleChange}
                         error={error}
                         errorMessage={errorMessage}
+                        onBlur={() => setErrorMessage("")}
                     />
 
                     <div className="text-right mt-0  inline-flex justify-end">

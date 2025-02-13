@@ -1,23 +1,73 @@
 import os
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Literal, cast
 
 import boto3
 from azure.core.paging import ItemPaged
-from azure.storage.blob import BlobSasPermissions, BlobServiceClient, generate_blob_sas, BlobProperties
+from azure.core.pipeline.transport import HttpResponse
+from azure.storage.blob import BlobProperties, BlobSasPermissions, BlobServiceClient, generate_blob_sas
 from botocore.client import BaseClient
 from mypy_boto3_s3 import S3Client
 
 from app import config
-from app.utils import split_list_into_chunks
+from app.log_config import logger
 from app.security import encode_sha256
+from app.utils import split_list_into_chunks
+
+
+class LocalStorage:
+    def __init__(self, base_path="/tmp"):
+        """
+        In standalone mode or dockerized environments, ensure proper volume mounting to persist data outside containers if using paths like /tmp3
+        """
+        self.base_path = Path(base_path)
+        self.base_path.mkdir(parents=True, exist_ok=True)
+
+    def file_exists(self, file_name: str) -> bool:
+        """Check if a file exists in local storage"""
+        target_path = self.base_path / file_name
+        return target_path.exists()
+
+    def get_file(self, file_name: str) -> bytes:
+        """Read a file from local storage"""
+        target_path = self.base_path / file_name
+        with open(target_path, "rb") as f:
+            return f.read()
+
+    def put_file(self, file_name: str, data: bytes) -> None:
+        """Write a file to local storage"""
+        target_path = self.base_path / file_name
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(target_path, "wb") as f:
+            f.write(data)
+
+    def delete_file(self, file_name: str) -> None:
+        """Delete a file from local storage"""
+        target_path = self.base_path / file_name
+        if target_path.exists():
+            target_path.unlink()
+
+    def list_files_under_path(self, path: str) -> list[str]:
+        """List all files under a given path prefix"""
+        search_path = self.base_path / path
+        if not search_path.exists():
+            return []
+
+        return [str(p.relative_to(self.base_path)) for p in search_path.rglob("*") if p.is_file()]
+
+    def delete_files(self, file_names: list[str]) -> None:
+        """Batch delete files from local storage."""
+        for file_name in file_names:
+            self.delete_file(file_name)
 
 
 class StorageProvider:
-    __storage_client: BaseClient | BlobServiceClient
+    __storage_client: BaseClient | BlobServiceClient | LocalStorage
 
     def __init__(self):
-        self.provider: Literal["s3"] | Literal["azure"] = config.STORAGE_PROVIDER
+        self.provider: Literal["s3"] | Literal["azure"] | Literal["local"] = config.STORAGE_PROVIDER
 
         match self.provider:
             case "s3":
@@ -43,6 +93,9 @@ class StorageProvider:
 
         self.__storage_client = BlobServiceClient.from_connection_string(azure_connection_string)
 
+    def __setup_localstorage(self):
+        self.__storage_client = LocalStorage()
+
     def file_exists(self, file_name: str) -> bool:
         match (self.provider, self.__storage_client):
             case ("s3", client) if isinstance(client, BaseClient):
@@ -56,6 +109,8 @@ class StorageProvider:
                 blob_service_client = cast(BlobServiceClient, client)
                 blob_client = blob_service_client.get_blob_client(container=config.BUCKET_OR_CONTAINER_NAME, blob=file_name)
                 return blob_client.exists()
+            case ("local", client) if isinstance(client, LocalStorage):
+                return client.file_exists(file_name=file_name)
             case _:
                 raise ValueError("Unsupported storage provider")
 
@@ -69,6 +124,8 @@ class StorageProvider:
             case ("azure", client) if isinstance(client, BlobServiceClient):
                 blob_client = client.get_blob_client(container=config.BUCKET_OR_CONTAINER_NAME, blob=file_name)
                 return blob_client.download_blob().readall()
+            case ("local", client) if isinstance(client, LocalStorage):
+                return client.get_file(file_name=file_name)
             case _:
                 raise ValueError("Unsupported storage provider")
 
@@ -80,6 +137,8 @@ class StorageProvider:
             case ("azure", client) if isinstance(client, BlobServiceClient):
                 blob_client = client.get_blob_client(container=config.BUCKET_OR_CONTAINER_NAME, blob=file_name)
                 blob_client.upload_blob(data, overwrite=True)
+            case ("local", client) if isinstance(client, LocalStorage):
+                client.put_file(file_name=file_name, data=data)
             case _:
                 raise ValueError("Unsupported storage provider")
 
@@ -91,6 +150,8 @@ class StorageProvider:
             case ("azure", client) if isinstance(client, BlobServiceClient):
                 blob_client = client.get_blob_client(container=config.BUCKET_OR_CONTAINER_NAME, blob=file_name)
                 blob_client.delete_blob()
+            case ("local", client) if isinstance(client, LocalStorage):
+                client.delete_file(file_name=file_name)
             case _:
                 raise ValueError("Unsupported storage provider")
 
@@ -102,7 +163,7 @@ class StorageProvider:
             case ("s3", client) if isinstance(client, BaseClient):
                 s3_client = cast(S3Client, client)
 
-                result = s3_client.list_objects(Bucket=config.BUCKET_OR_CONTAINER_NAME, Prefix=path, Delimiter='/')
+                result = s3_client.list_objects(Bucket=config.BUCKET_OR_CONTAINER_NAME, Prefix=path, Delimiter="/")
                 file_names = [x["Key"] for x in result["Contents"]]
 
                 return file_names
@@ -111,9 +172,11 @@ class StorageProvider:
                 container_client = blob_service_client.get_container_client(container=config.BUCKET_OR_CONTAINER_NAME)
 
                 blob_properties: ItemPaged[BlobProperties] = container_client.list_blobs(name_starts_with=path)
-                file_names =  [x.name for x in blob_properties]
+                file_names = [x.name for x in blob_properties]
 
                 return file_names
+            case ("local", client) if isinstance(client, LocalStorage):
+                return client.list_files_under_path(path=path)
             case _:
                 raise ValueError("Unsupported storage provider")
 
@@ -128,10 +191,7 @@ class StorageProvider:
                 # Up to 1000 objects can be deleted per delete_objects call
                 chunks = split_list_into_chunks(l=file_names, n=1000)
                 for chunk in chunks:
-                    s3_client.delete_objects(
-                        Bucket=config.BUCKET_OR_CONTAINER_NAME,
-                        Delete={"Objects": [{"Key": x} for x in chunk]}
-                    )
+                    s3_client.delete_objects(Bucket=config.BUCKET_OR_CONTAINER_NAME, Delete={"Objects": [{"Key": x} for x in chunk]})
             case ("azure", client) if isinstance(client, BlobServiceClient):
                 blob_service_client = cast(BlobServiceClient, client)
                 container_client = blob_service_client.get_container_client(container=config.BUCKET_OR_CONTAINER_NAME)
@@ -139,7 +199,13 @@ class StorageProvider:
                 # Up to 256 blobs can be deleted per delete_blobs call
                 chunks = split_list_into_chunks(l=file_names, n=256)
                 for chunk in chunks:
-                    container_client.delete_blobs(*chunk)
+                    response_iterator: Iterator[HttpResponse] = container_client.delete_blobs(*chunk, raise_on_any_failure=False)
+                    for blob_response in response_iterator:
+                        if blob_response.status_code not in [200, 202, 204]:
+                            # E.g. if the blob does not exist
+                            logger.error(f"Could not delete blob, status code: {blob_response.status_code}, reason: {blob_response.reason}")
+            case ("local", client) if isinstance(client, LocalStorage):
+                client.delete_files(file_names=file_names)
             case _:
                 raise ValueError("Unsupported storage provider")
 

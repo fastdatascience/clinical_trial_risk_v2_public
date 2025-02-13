@@ -1,6 +1,6 @@
 #!/bin/bash
 
-celery -b "redis://localhost:6379" -A app.ct_core worker --concurrency=10 -l info &
+celery -b "redis://localhost:6379" -A app.ct_core worker --concurrency=5 -l info &
 WORKER_PID=$!
 
 celery -b "redis://localhost:6379" -A app.ct_core beat -l info &
