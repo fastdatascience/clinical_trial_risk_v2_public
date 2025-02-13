@@ -226,7 +226,3 @@ venv.bak/
 
 # NLTK
 nltk_data/
-
-# Classifiers
-classifiers/
-/tests/integration_tests/HIV-HIV-2017-L-I.pdf

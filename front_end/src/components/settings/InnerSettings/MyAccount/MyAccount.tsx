@@ -149,7 +149,7 @@ const MyAccount: React.FC = () => {
 
     return (
         <>
-            <div className="p-10 flex flex-col flex-wrap space-y-6 w-full">
+            <div className="p-5 flex flex-col  flex-wrap space-y-6 w-full">
                 <div>
                     <h3 className="font-poppins text-2xl font-semibold">
                         Account

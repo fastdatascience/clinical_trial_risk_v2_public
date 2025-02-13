@@ -10,6 +10,7 @@ import {
 import jsonp from "jsonp";
 import { useEffect, useState } from "react";
 import {
+    openEmailVerificationAtom,
     userAccessTokenAtom,
     userAtom,
     userAuthProfileAtom,
@@ -21,7 +22,6 @@ import { getUserGoogleProfile, signup } from "../../utils/services";
 import { EMAIL_REGEX, FormErrors } from "../../utils/constants";
 
 import { TextInput, PasswordInput, PhoneNumberInput } from "../common/index";
-import EmailVerification from "../modals/EmailVerification";
 import { validateFormData } from "../../utils/utils";
 import GoogleAuthButton from "../common/GoogleAuthButton";
 import { useAuth } from "../../hooks/useAuth";
@@ -41,8 +41,9 @@ const SignUp: React.FC = () => {
     });
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
-    const [openEmailVerification, setOpenEmailVerification] =
-        useState<boolean>(false);
+    const [, setOpenEmailVerification] = useAtom<boolean>(
+        openEmailVerificationAtom
+    );
     const [errors, setErrors] = useState<FormErrors | undefined>({});
     const [user, setUser] = useAtom(userAtom);
     const [searchParams] = useSearchParams();
@@ -169,353 +170,338 @@ const SignUp: React.FC = () => {
 
     return (
         <>
-            <>
-                {Object.keys(currentParam).length !== 0 ? (
-                    // TODO: refactor this code to be modular
-                    <div className="flex lg:flex-row flex-col my-10">
-                        <div className="lg:bg-gradient-to-l from-[#0c4a6e] to-[#065984]  lg:shadow-md rounded-l-lg lg:flex lg:justify-center lg:items-center p-5 ">
-                            <Card className="mt-6 lg:w-96 border-t-4 border-green_primary">
-                                <CardBody>
-                                    <Typography>
-                                        {currentParam?.description}
-                                    </Typography>
-                                    <Typography
-                                        variant="h5"
-                                        color="blue-gray"
-                                        className="mb-2"
-                                    >
-                                        {currentParam?.name}
-                                    </Typography>
-                                </CardBody>
-                                <CardFooter className="pt-0 flex justify-end">
-                                    <Typography>
-                                        {currentParam?.duration}
-                                    </Typography>
-                                </CardFooter>
-                            </Card>
-                        </div>
-                        <div>
-                            <Card className="bg-white p-5">
-                                <Typography
-                                    variant="h3"
-                                    className="text-text_primary text-center"
-                                >
-                                    Sign Up
+            {Object.keys(currentParam).length !== 0 ? (
+                // TODO: refactor this code to be modular
+                <div className="flex lg:flex-row flex-col my-10">
+                    <div className="lg:bg-gradient-to-l from-[#0c4a6e] to-[#065984]  lg:shadow-md rounded-l-lg lg:flex lg:justify-center lg:items-center p-5 ">
+                        <Card className="mt-6 lg:w-96 border-t-4 border-green_primary">
+                            <CardBody>
+                                <Typography>
+                                    {currentParam?.description}
                                 </Typography>
                                 <Typography
-                                    variant="h6"
-                                    color="gray"
-                                    className="mt-1 text-center font-normal text-text_secondary"
+                                    variant="h5"
+                                    color="blue-gray"
+                                    className="mb-2"
                                 >
-                                    Please enter your details.
+                                    {currentParam?.name}
                                 </Typography>
-                                <div className="mt-5 mb-2 w-80 max-w-screen-lg sm:w-96">
-                                    <div className="flex flex-col gap-6">
-                                        <TextInput
-                                            name={"first_name"}
-                                            inputType={"text"}
-                                            label={"First Name"}
-                                            initialValue={first_name}
-                                            handleChange={handleChange}
-                                            errorMessage={
-                                                errors?.first_nameError
-                                            }
-                                        />
-                                        <TextInput
-                                            name={"last_name"}
-                                            inputType={"text"}
-                                            label={"Last Name"}
-                                            initialValue={last_name}
-                                            handleChange={handleChange}
-                                            errorMessage={
-                                                errors?.last_nameError
-                                            }
-                                        />
-
-                                        <TextInput
-                                            name={"phoneNumber"}
-                                            inputType={"tel"}
-                                            label={"Phone Number"}
-                                            initialValue={phone_number}
-                                            handleChange={handleChange}
-                                            errorMessage={
-                                                errors?.phone_numberError
-                                            }
-                                        />
-
-                                        <TextInput
-                                            name={"email"}
-                                            inputType={"email"}
-                                            label="Email"
-                                            initialValue={email}
-                                            handleChange={handleChange}
-                                            errorMessage={
-                                                errors?.emailError ??
-                                                errors?.apiError
-                                            }
-                                        />
-                                        <PasswordInput
-                                            name="password"
-                                            label="Password"
-                                            initialValue={password}
-                                            handleChange={handleChange}
-                                            errorMessage={errors?.passwordError}
-                                        />
-                                    </div>
-                                    <Button
-                                        className="mt-6 bg-green_primary rounded-full flex justify-center items-center py-4 font-semibold"
-                                        fullWidth
-                                        onClick={handleSignUp}
-                                    >
-                                        {isLoading ? (
-                                            <Spinner
-                                                color="green"
-                                                className="h-6 w-6"
-                                            />
-                                        ) : (
-                                            "Register"
-                                        )}
-                                    </Button>
-                                    <Typography
-                                        color="gray"
-                                        className="mt-4 text-sm text-center font-normal text-text_secondary"
-                                    >
-                                        Already have an account?{" "}
-                                        <span className="font-medium text-green_primary text-sm">
-                                            <Link to={"/login"}>Sign In</Link>
-                                        </span>
-                                    </Typography>
-                                </div>
-                            </Card>
-                        </div>
+                            </CardBody>
+                            <CardFooter className="pt-0 flex justify-end">
+                                <Typography>
+                                    {currentParam?.duration}
+                                </Typography>
+                            </CardFooter>
+                        </Card>
                     </div>
-                ) : (
-                    <Card className="bg-white p-5 my-10 ">
-                        <Typography
-                            variant="h3"
-                            className="text-text_primary text-center"
-                        >
-                            Sign Up
-                        </Typography>
-                        <Typography
-                            variant="h6"
-                            color="gray"
-                            className="mt-1 text-center font-normal text-text_secondary"
-                        >
-                            Please enter your details.
-                        </Typography>
-                        <div className="mt-5 mb-2 w-80 max-w-screen-lg sm:w-96">
-                            <div className="flex flex-col gap-6">
-                                <TextInput
-                                    name={"first_name"}
-                                    inputType={"text"}
-                                    label={"First Name"}
-                                    initialValue={first_name}
-                                    handleChange={handleChange}
-                                    errorMessage={errors?.first_nameError}
-                                    onBlur={() =>
-                                        setErrors({
-                                            ...errors,
-                                            first_nameError: "",
-                                        })
-                                    }
-                                />
-                                <TextInput
-                                    name={"last_name"}
-                                    inputType={"text"}
-                                    label={"Last Name"}
-                                    initialValue={last_name}
-                                    handleChange={handleChange}
-                                    errorMessage={errors?.last_nameError}
-                                    onBlur={() =>
-                                        setErrors({
-                                            ...errors,
-                                            last_nameError: "",
-                                        })
-                                    }
-                                />
+                    <div>
+                        <Card className="bg-white p-5">
+                            <Typography
+                                variant="h3"
+                                className="text-text_primary text-center"
+                            >
+                                Sign Up
+                            </Typography>
+                            <Typography
+                                variant="h6"
+                                color="gray"
+                                className="mt-1 text-center font-normal text-text_secondary"
+                            >
+                                Please enter your details.
+                            </Typography>
+                            <div className="mt-5 mb-2 w-80 max-w-screen-lg sm:w-96">
+                                <div className="flex flex-col gap-6">
+                                    <TextInput
+                                        name={"first_name"}
+                                        inputType={"text"}
+                                        label={"First Name"}
+                                        initialValue={first_name}
+                                        handleChange={handleChange}
+                                        errorMessage={errors?.first_nameError}
+                                    />
+                                    <TextInput
+                                        name={"last_name"}
+                                        inputType={"text"}
+                                        label={"Last Name"}
+                                        initialValue={last_name}
+                                        handleChange={handleChange}
+                                        errorMessage={errors?.last_nameError}
+                                    />
 
-                                <PhoneNumberInput
-                                    initialValue={phone_number}
-                                    handleChange={(value) =>
-                                        setUser({
-                                            ...user,
-                                            phone_number: value,
-                                        })
-                                    }
-                                    errorMessage={errors?.phone_numberError}
-                                    onBlur={() =>
-                                        setErrors({
-                                            ...errors,
-                                            phone_numberError: "",
-                                        })
-                                    }
-                                />
+                                    <TextInput
+                                        name={"phoneNumber"}
+                                        inputType={"tel"}
+                                        label={"Phone Number"}
+                                        initialValue={phone_number}
+                                        handleChange={handleChange}
+                                        errorMessage={errors?.phone_numberError}
+                                    />
 
-                                <TextInput
-                                    name={"email"}
-                                    inputType={"email"}
-                                    label="Email"
-                                    initialValue={email}
-                                    handleChange={handleChange}
-                                    errorMessage={errors?.emailError}
-                                    onBlur={() =>
-                                        setErrors({
-                                            ...errors,
-                                            emailError: "",
-                                        })
-                                    }
-                                />
-                                <PasswordInput
-                                    name="password"
-                                    label="Password"
-                                    initialValue={password}
-                                    handleChange={handleChange}
-                                    errorMessage={errors?.passwordError}
-                                    onBlur={() =>
-                                        setErrors({
-                                            ...errors,
-                                            passwordError: "",
-                                        })
-                                    }
-                                />
-
-                                <Checkbox
-                                    required
-                                    crossOrigin={undefined}
-                                    color="green"
-                                    name="terms_and_privacy_accepted"
-                                    checked={terms_and_privacy_accepted}
-                                    onChange={handleChange}
-                                    label={
-                                        <>
-                                            <Typography
-                                                variant="small"
-                                                color="gray"
-                                                className="flex items-center font-normal "
-                                            >
-                                                I agree with the&nbsp;
-                                                <a
-                                                    href="https://fastdatascience.com/clinical-trial-risk-tool-terms-of-use/"
-                                                    target="_blank"
-                                                    className="font-medium text-[#38A385] underline transition-colors hover:text-text_primary"
-                                                >
-                                                    Terms of Use
-                                                </a>
-                                                &nbsp;and
-                                                <a
-                                                    href="https://fastdatascience.com/clinical-trial-risk-tool-privacy-policy/"
-                                                    target="_blank"
-                                                    className="font-medium  ml-1 underline   text-[#38A385]  transition-colors hover:text-text_primary"
-                                                >
-                                                    Privacy Policy
-                                                </a>
-                                            </Typography>
-                                            {errors?.terms_and_privacy_acceptedError && (
-                                                <Typography
-                                                    variant="small"
-                                                    color="red"
-                                                    className="text-[10px]"
-                                                >
-                                                    You must accept the terms
-                                                    and privacy policy.
-                                                </Typography>
-                                            )}
-                                        </>
-                                    }
-                                    containerProps={{
-                                        className: "-ml-2.5",
-                                    }}
-                                />
+                                    <TextInput
+                                        name={"email"}
+                                        inputType={"email"}
+                                        label="Email"
+                                        initialValue={email}
+                                        handleChange={handleChange}
+                                        errorMessage={
+                                            errors?.emailError ??
+                                            errors?.apiError
+                                        }
+                                    />
+                                    <PasswordInput
+                                        name="password"
+                                        label="Password"
+                                        initialValue={password}
+                                        handleChange={handleChange}
+                                        errorMessage={errors?.passwordError}
+                                    />
+                                </div>
+                                <Button
+                                    className="mt-6 bg-green_primary rounded-full flex justify-center items-center py-4 font-semibold"
+                                    fullWidth
+                                    onClick={handleSignUp}
+                                >
+                                    {isLoading ? (
+                                        <Spinner
+                                            color="green"
+                                            className="h-6 w-6"
+                                        />
+                                    ) : (
+                                        "Register"
+                                    )}
+                                </Button>
+                                <Typography
+                                    color="gray"
+                                    className="mt-4 text-sm text-center font-normal text-text_secondary"
+                                >
+                                    Already have an account?{" "}
+                                    <span className="font-medium text-green_primary text-sm">
+                                        <Link to={"/login"}>Sign In</Link>
+                                    </span>
+                                </Typography>
                             </div>
+                        </Card>
+                    </div>
+                </div>
+            ) : (
+                <Card className="bg-white p-5 my-10 ">
+                    <Typography
+                        variant="h3"
+                        className="text-text_primary text-center"
+                    >
+                        Sign Up
+                    </Typography>
+                    <Typography
+                        variant="h6"
+                        color="gray"
+                        className="mt-1 text-center font-normal text-text_secondary"
+                    >
+                        Please enter your details.
+                    </Typography>
+                    <div className="mt-5 mb-2 w-80 max-w-screen-lg sm:w-96">
+                        <div className="flex flex-col gap-6">
+                            <TextInput
+                                name={"first_name"}
+                                inputType={"text"}
+                                label={"First Name"}
+                                initialValue={first_name}
+                                handleChange={handleChange}
+                                errorMessage={errors?.first_nameError}
+                                onBlur={() =>
+                                    setErrors({
+                                        ...errors,
+                                        first_nameError: "",
+                                    })
+                                }
+                            />
+                            <TextInput
+                                name={"last_name"}
+                                inputType={"text"}
+                                label={"Last Name"}
+                                initialValue={last_name}
+                                handleChange={handleChange}
+                                errorMessage={errors?.last_nameError}
+                                onBlur={() =>
+                                    setErrors({
+                                        ...errors,
+                                        last_nameError: "",
+                                    })
+                                }
+                            />
+
+                            <PhoneNumberInput
+                                initialValue={phone_number}
+                                handleChange={(value) =>
+                                    setUser({
+                                        ...user,
+                                        phone_number: value,
+                                    })
+                                }
+                                errorMessage={errors?.phone_numberError}
+                                onBlur={() =>
+                                    setErrors({
+                                        ...errors,
+                                        phone_numberError: "",
+                                    })
+                                }
+                            />
+
+                            <TextInput
+                                name={"email"}
+                                inputType={"email"}
+                                label="Email"
+                                initialValue={email}
+                                handleChange={handleChange}
+                                errorMessage={errors?.emailError}
+                                onBlur={() =>
+                                    setErrors({
+                                        ...errors,
+                                        emailError: "",
+                                    })
+                                }
+                            />
+                            <PasswordInput
+                                name="password"
+                                label="Password"
+                                initialValue={password}
+                                handleChange={handleChange}
+                                errorMessage={errors?.passwordError}
+                                onBlur={() =>
+                                    setErrors({
+                                        ...errors,
+                                        passwordError: "",
+                                    })
+                                }
+                            />
 
                             <Checkbox
-                                // only enabled when email is valid
-                                disabled={!email || !EMAIL_REGEX.test(email)}
+                                required
                                 crossOrigin={undefined}
                                 color="green"
-                                name="subscribe_to_newsletter"
-                                checked={subscribe_to_newsletter}
+                                name="terms_and_privacy_accepted"
+                                checked={terms_and_privacy_accepted}
                                 onChange={handleChange}
                                 label={
-                                    <Typography
-                                        variant="small"
-                                        color="gray"
-                                        className="flex items-center font-normal "
-                                    >
-                                        I would like to subscribe to newsletter
-                                    </Typography>
+                                    <>
+                                        <Typography
+                                            variant="small"
+                                            color="gray"
+                                            className="flex items-center font-normal "
+                                        >
+                                            I agree with the&nbsp;
+                                            <a
+                                                href="https://fastdatascience.com/clinical-trial-risk-tool-terms-of-use/"
+                                                target="_blank"
+                                                className="font-medium text-[#38A385] underline transition-colors hover:text-text_primary"
+                                            >
+                                                Terms of Use
+                                            </a>
+                                            &nbsp;and
+                                            <a
+                                                href="https://fastdatascience.com/clinical-trial-risk-tool-privacy-policy/"
+                                                target="_blank"
+                                                className="font-medium  ml-1 underline   text-[#38A385]  transition-colors hover:text-text_primary"
+                                            >
+                                                Privacy Policy
+                                            </a>
+                                        </Typography>
+                                        {errors?.terms_and_privacy_acceptedError && (
+                                            <Typography
+                                                variant="small"
+                                                color="red"
+                                                className="text-[10px]"
+                                            >
+                                                You must accept the terms and
+                                                privacy policy.
+                                            </Typography>
+                                        )}
+                                    </>
                                 }
                                 containerProps={{
                                     className: "-ml-2.5",
                                 }}
                             />
-
-                            <Typography
-                                variant="small"
-                                color="black"
-                                className="text-[10px]"
-                            >
-                                We use Mailchimp as our marketing platform. By
-                                clicking above to subscribe you acknowledge that
-                                your information will be transferred to
-                                Mailchimp for processing.{" "}
-                                <a
-                                    href="https://mailchimp.com/legal/"
-                                    target="_blank"
-                                    className="underline text-blue-600 font-medium"
-                                >
-                                    Learn More
-                                </a>{" "}
-                                about Mailchimp's privacy practices.
-                            </Typography>
-
-                            <Button
-                                className="mt-6 bg-green_primary rounded-full flex justify-center items-center py-4 font-semibold"
-                                fullWidth
-                                onClick={handleSignUp}
-                            >
-                                {isLoading ? (
-                                    <Spinner
-                                        color="green"
-                                        className="h-6 w-6"
-                                    />
-                                ) : (
-                                    "Register"
-                                )}
-                            </Button>
-                            <Typography
-                                color="gray"
-                                className="mt-4 text-sm text-center font-normal text-text_secondary"
-                            >
-                                Already have an account?{" "}
-                                <Link
-                                    to={"/login"}
-                                    className="font-semibold text-green_primary text-sm"
-                                >
-                                    Sign In
-                                </Link>
-                            </Typography>
-
-                            <div className="my-4 flex items-center gap-2">
-                                <span className="h-[1px] w-1/2 bg-blue-gray-100" />
-                                <Typography variant="small" color="blue-gray">
-                                    Or
-                                </Typography>
-                                <span className="h-[1px] w-1/2 bg-blue-gray-100" />
-                            </div>
-                            <GoogleAuthButton
-                                btnText={"Sign up with Google"}
-                                handleGoogleAuth={loginWithGoogle}
-                            />
                         </div>
-                    </Card>
-                )}
-            </>
-            <EmailVerification
-                isOpen={openEmailVerification}
-                setIsOpen={setOpenEmailVerification}
-            />
+
+                        <Checkbox
+                            // only enabled when email is valid
+                            disabled={!email || !EMAIL_REGEX.test(email)}
+                            crossOrigin={undefined}
+                            color="green"
+                            name="subscribe_to_newsletter"
+                            checked={subscribe_to_newsletter}
+                            onChange={handleChange}
+                            label={
+                                <Typography
+                                    variant="small"
+                                    color="gray"
+                                    className="flex items-center font-normal "
+                                >
+                                    I would like to subscribe to newsletter
+                                </Typography>
+                            }
+                            containerProps={{
+                                className: "-ml-2.5",
+                            }}
+                        />
+
+                        <Typography
+                            variant="small"
+                            color="black"
+                            className="text-[10px]"
+                        >
+                            We use Mailchimp as our marketing platform. By
+                            clicking above to subscribe you acknowledge that
+                            your information will be transferred to Mailchimp
+                            for processing.{" "}
+                            <a
+                                href="https://mailchimp.com/legal/"
+                                target="_blank"
+                                className="underline text-blue-600 font-medium"
+                            >
+                                Learn More
+                            </a>{" "}
+                            about Mailchimp's privacy practices.
+                        </Typography>
+
+                        <Button
+                            className="mt-6 bg-green_primary rounded-full flex justify-center items-center py-4 font-semibold"
+                            fullWidth
+                            onClick={handleSignUp}
+                        >
+                            {isLoading ? (
+                                <Spinner color="green" className="h-6 w-6" />
+                            ) : (
+                                "Register"
+                            )}
+                        </Button>
+                        <Typography
+                            color="gray"
+                            className="mt-4 text-sm text-center font-normal text-text_secondary"
+                        >
+                            Already have an account?{" "}
+                            <Link
+                                to={"/login"}
+                                className="font-semibold text-green_primary text-sm"
+                            >
+                                Sign In
+                            </Link>
+                        </Typography>
+
+                        <div className="my-4 flex items-center gap-2">
+                            <span className="h-[1px] w-1/2 bg-blue-gray-100" />
+                            <Typography variant="small" color="blue-gray">
+                                Or
+                            </Typography>
+                            <span className="h-[1px] w-1/2 bg-blue-gray-100" />
+                        </div>
+                        <GoogleAuthButton
+                            btnText={"Sign up with Google"}
+                            handleGoogleAuth={loginWithGoogle}
+                        />
+                    </div>
+                </Card>
+            )}
         </>
     );
 };

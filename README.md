@@ -10,114 +10,52 @@
 <a href="https://medium.com/fast-data-science"><img align="left" src="https://raw.githubusercontent.com//harmonydata/.github/main/profile/medium.svg" alt="Fast Data Science | Medium" width="21px"/></a>
 <a href="https://mastodon.social/@fastdatascience"><img align="left" src="https://raw.githubusercontent.com//harmonydata/.github/main/profile/mastodon.svg" alt="Fast Data Science | Mastodon" width="21px"/></a>
 
-# Fast Clinical NLP Python Library - analysis of clinical trial protocols
+# Clinical Trials
 
-## Where everything is
+The Clinical Trial Risk Tool is a web application that allows a user to upload a PDF file of a clinical trial protocol (
+a plan for how the trial will be run) and it gets bits of information out of the protocol and gets two values:
 
-New version at: https://clinical.fastdatascience.com/login
+* The cost prediction - how much in $ will it cost to run this trial?
+* The risk - how risky is this trial?
 
-Old version at: https://app.clinicaltrialrisk.org/
+## Built with
 
-# What does the Fast Clinical NLP do?
+[![Made with Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)](https://python.org) [![FastAPI](https://img.shields.io/badge/FastAPI-%5E0.100-009688?style=flat&logo=fastapi&logoColor=009688&link=https://fastapi.tiangolo.com/)](https://fastapi.tiangolo.com/) ![Docker](https://img.shields.io/badge/Docker-gray?style=flat&logo=docker&logoColor=2496ED) [![Poetry](https://img.shields.io/badge/Poetry-gray?style=flat&logo=poetry&link=https://python-poetry.org/)](https://python-poetry.org/)
 
-* It's hard to determine the cost of a clinical trial
-* Relevant information is stored in plain text
-* The tool uses NLP to extract data from the tool
+## Run with Docker
 
-## Requirements
+### 1. Clone the repo
 
-You need a Windows, Linux or Mac system with
-
-* Python 3.11 or above
-* Java 17 (if you want to extract items from PDFs)
-* the requirements in [requirements.txt](./requirements.txt)
-
-## Who to contact?
-
-You can contact Thomas Wood at https://fastdatascience.com/.
-
-
-## 🖥 Installing the Python package
-
-```
-pip install .
+```bash
+git clone https://github.com/fastdatascience/clinical_trial_risk_v2_public
 ```
 
-## Working in this environment
+### 2. Environment variables
 
-We recommend making a virtual environment:
+* Copy the file `/back_end/.env.example-docker` to `/back_end/.env`
+* Copy the file `/front_end/.env.example-docker` to `/front_end/.env`
 
-```
-python -m venv venv
-source venv/bin/activate
-```
+You may update the environment variables if needed.
 
+### 3. Containers
 
-## Developing the tool
+#### 3.1 Build and start containers
 
-### How to generate a new module
+The command below will build, (re)create, attach services to containers, and finally start all containers. The
+back-end will be accessible at `http://127.0.0.1:5000` and the front-end will be accessible at `http://127.0.0.1:5173`.
 
-```
-python generate.py --module test_module
-```
-
-### 🧪 Automated tests
-
-Test code is in **tests/** folder using [unittest](https://docs.python.org/3/library/unittest.html).
-
-The testing tool `tox` is used in the automation with GitHub Actions CI/CD. **Since the PDF extraction also needs Java and Tika installed, you cannot run the unit tests without first installing Java and Tika. See above for instructions.**
-
-### 🧪 Use tox locally
-
-Install tox and run it:
-
-```
-pip install tox
-tox
+```bash
+docker compose up
 ```
 
-In our configuration, tox runs a check of source distribution using [check-manifest](https://pypi.org/project/check-manifest/) (which requires your repo to be git-initialized (`git init`) and added (`git add .`) at least), setuptools's check, and unit tests using pytest. You don't need to install check-manifest and pytest though, tox will install them in a separate environment.
+#### 3.2 Stop containers
 
-The automated tests are run against several Python versions, but on your machine, you might be using only one version of Python, if that is Python 3.9, then run:
+The command below still stop all running containers.
 
+```bash
+docker compose stop
 ```
-tox -e py39
-```
 
-Thanks to GitHub Actions' automated process, you don't need to generate distribution files locally.
+## Login
 
-## News: Dash in Action webinar on 7 June 2023
-
-![The Dash App webinar](screenshots/1684787269147.png)
-
-Thomas Wood of [Fast Data Science](http://fastdatascience.com/) presented this tool at the [Plotly](https://plotly.com/) [Dash in Action webinar](https://go.plotly.com/dash-in-action), showing how the app uses [Natural Language Processing](https://naturallanguageprocessing.com) to estimate the risk of a clinical trial failing.
-
-[![The Dash App webinar](/screenshots/video.jpg)](https://youtu.be/KL8cytV1qRA?t=2111 "The Dash App webinar")
-
-
-## 📜 License
-
-MIT License. Copyright (c) 2024 Fast Data Science (https://fastdatascience.com)
-
-## How to cite the Fast Clinical NLP Python Library?
-
-If you would like to cite the tool alone, you can cite:
-
-Wood TA and McNair D. [Clinical Trial Risk Tool](https://fastdatascience.com/clinical-trial-risk-tool/): software application using natural language processing to identify the risk of trial uninformativeness. Gates Open Res 2023, 7:56 doi: [10.12688/gatesopenres.14416.1](https://gatesopenresearch.org/articles/7-56).
-
-A BibTeX entry for LaTeX users is
-
-```
-@article{Wood_2023,
-	doi = {10.12688/gatesopenres.14416.1},
-	url = {https://doi.org/10.12688%2Fgatesopenres.14416.1},
-	year = 2023,
-	month = {apr},
-	publisher = {F1000 Research Ltd},
-	volume = {7},
-	pages = {56},
-	author = {Thomas A Wood and Douglas McNair},
-	title = {Clinical Trial Risk Tool: software application using natural language processing to identify the risk of trial uninformativeness},
-	journal = {Gates Open Research}
-}
-```
+TODO: Default user account for login

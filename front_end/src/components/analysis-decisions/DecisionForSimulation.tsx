@@ -1,14 +1,17 @@
 import React from "react";
-import { Simulation } from "../../utils/types";
+import { HeatMapData, Simulation } from "../../utils/types";
 import Heatmap from "../charts/Heatmap";
 import { normalizeDataForHeatmap } from "../../utils/utils";
 
 const DecisionForSimulation: React.FC<{
     simulation: Simulation | undefined;
 }> = ({ simulation }) => {
-    const heatmapGrid = normalizeDataForHeatmap(simulation!, 15);
-
     if (!simulation) return null;
+    const heatmapGrid = normalizeDataForHeatmap(
+        simulation as unknown as HeatMapData<number[]>,
+        15
+    );
+
     return (
         <div className="flex flex-col justify-center items-center mt-3 ">
             <p className=" text-center text-sm leading-6 font-normal  text-text_secondary">
@@ -24,7 +27,7 @@ const DecisionForSimulation: React.FC<{
                     Graph of key SIMULATION related terms by page number in
                     document.
                 </h3>
-                <Heatmap width={700} height={500} data={heatmapGrid} />
+                <Heatmap data={heatmapGrid} />
             </div>
         </div>
     );

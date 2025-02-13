@@ -1,5 +1,5 @@
 import { Dialog, Transition } from "@headlessui/react";
-import React, { Fragment, useState } from "react"
+import React, { Fragment, useState } from "react";
 import { useAtom } from "jotai";
 import { IModalProps, OtpSendTo } from "../../utils/types";
 import { Button, Spinner } from "@material-tailwind/react";
@@ -8,21 +8,19 @@ import OtpInput from "../common/OTPInput";
 import { userAtom } from "../../lib/atoms";
 import { resendOTP, verifyEmail } from "../../utils/services";
 import { useNavigate } from "react-router-dom";
-import { AxiosResponse } from "axios";
-
-
+import { AxiosError, AxiosResponse } from "axios";
 
 const EmailVerification: React.FC<IModalProps> = ({ isOpen, setIsOpen }) => {
     const navigate = useNavigate();
     const [user] = useAtom(userAtom);
     const [isLoading, setIsLoading] = useState(false);
     const [otp, setOtp] = useState<string>("");
-    const { email } = user
+    const [errorText, setErrorText] = useState<string>("");
+    const { email } = user;
 
     const onChange = (value: string) => {
         setOtp(value);
     };
-
 
     const closeModal = () => {
         setIsOpen(false);
@@ -32,26 +30,29 @@ const EmailVerification: React.FC<IModalProps> = ({ isOpen, setIsOpen }) => {
         setIsOpen(true);
     };
 
-
     const handleEmailVerification = async () => {
         const data = {
             payload: email,
             otp,
             type: OtpSendTo.EMAIL,
-        }
+        };
         try {
             setIsLoading(true);
-            const res = await verifyEmail(data) as AxiosResponse;
+            const res = (await verifyEmail(data)) as AxiosResponse;
             if (res?.status === 200) {
                 if (res?.data?.data?.is_email_verified) {
                     setIsLoading(false);
-                    navigate("/login")
+                    navigate("/login");
                     closeModal();
                 }
             }
         } catch (error) {
+            if (error instanceof AxiosError) {
+                console.error("Error verifying OTP", error);
+                setErrorText(error.response?.data?.error);
+            }
+        } finally {
             setIsLoading(false);
-            console.error(error);
         }
     };
 
@@ -59,14 +60,15 @@ const EmailVerification: React.FC<IModalProps> = ({ isOpen, setIsOpen }) => {
         const data = {
             payload: email,
             type: OtpSendTo.EMAIL,
-        }
+        };
         try {
-            await resendOTP(data) as AxiosResponse;
+            (await resendOTP(data)) as AxiosResponse;
         } catch (error) {
             console.error(error);
         }
     };
     const maskedEmail = email?.replace(/^(.{2})[^@]+/, "$1***");
+
     return (
         <Transition appear show={isOpen} as={Fragment}>
             <Dialog as="div" className="relative z-10" onClose={openModal}>
@@ -100,7 +102,8 @@ const EmailVerification: React.FC<IModalProps> = ({ isOpen, setIsOpen }) => {
                                                 Please check your E-Mail
                                             </h3>
                                             <h3 className="font-normal text-sm text-text_secondary">
-                                                we have sent 6 digit code to {maskedEmail}
+                                                we have sent 6 digit code to{" "}
+                                                {maskedEmail}
                                             </h3>
                                         </div>
                                     </div>
@@ -111,19 +114,47 @@ const EmailVerification: React.FC<IModalProps> = ({ isOpen, setIsOpen }) => {
                                         <h3 className="font-semibold text-3xl text-BLACK flex flex-wrap">
                                             Enter the 6 Digit Code
                                         </h3>
-                                        <div className="flex w-full justify-between">
-                                            <OtpInput value={otp} valueLength={6} onChange={onChange} />
+                                        <div className="flex flex-col space-y-2 w-full justify-between">
+                                            <div className="flex w-full justify-between">
+                                                <OtpInput
+                                                    isError={!!errorText}
+                                                    value={otp}
+                                                    valueLength={6}
+                                                    onChange={onChange}
+                                                />
+                                            </div>
+                                            {errorText && (
+                                                <small className="text-red-500">
+                                                    {errorText}
+                                                </small>
+                                            )}
                                         </div>
 
-                                        <Button className="mt-6 bg-green_primary rounded-full flex justify-center items-center py-4 font-semibold" fullWidth onClick={handleEmailVerification} >
-                                            {isLoading ? <Spinner color="green" className="h-6 w-6" /> : "Submit"}
+                                        <Button
+                                            disabled={isLoading}
+                                            className="mt-6 bg-green_primary rounded-full flex justify-center items-center py-4 font-semibold"
+                                            fullWidth
+                                            onClick={handleEmailVerification}
+                                        >
+                                            {isLoading ? (
+                                                <Spinner
+                                                    color="green"
+                                                    className="h-6 w-6"
+                                                />
+                                            ) : (
+                                                "Submit"
+                                            )}
                                         </Button>
-                                        <div className=" w-full flex flex-col items-center">
+                                        <div className="w-full flex flex-col items-center">
                                             <div className="text-sm ">
-                                                <p className="text-text_secondary">You didnt get a code?{" "}
+                                                <p className="text-text_secondary">
+                                                    You didnt get a code?{" "}
                                                     <span
+                                                        role="button"
                                                         className="text-green_primary cursor-pointer font-semibold"
-                                                        onClick={handleResendOTP}
+                                                        onClick={
+                                                            handleResendOTP
+                                                        }
                                                     >
                                                         {" "}
                                                         Resend code{" "}
@@ -139,9 +170,7 @@ const EmailVerification: React.FC<IModalProps> = ({ isOpen, setIsOpen }) => {
                 </div>
             </Dialog>
         </Transition>
+    );
+};
 
-
-    )
-}
-
-export default EmailVerification
+export default EmailVerification;

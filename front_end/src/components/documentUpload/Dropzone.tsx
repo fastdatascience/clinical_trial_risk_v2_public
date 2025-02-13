@@ -1,5 +1,5 @@
 import { useDropzone } from "react-dropzone";
-import { AxiosResponse } from "axios";
+import { AxiosError, AxiosResponse } from "axios";
 import { useAtom } from "jotai";
 import { PDFDocumentProxy } from "pdfjs-dist";
 
@@ -33,10 +33,13 @@ import {
     loadPDFDocument,
     megabytesToBytes,
 } from "../../utils/utils";
+import { useState } from "react";
 
 let progressText: string = "Waiting to start...";
 
 const Dropzone = () => {
+    const [errorMessage, setErrorMessage] = useState<string>("");
+
     const [userProfile] = useAtom(userProfileAtom);
     const [, setProtocolResult] = useAtom(processResultAtom);
     const [, setMetaData] = useAtom(metaDataAtom);
@@ -94,12 +97,7 @@ const Dropzone = () => {
             setIsUploading(true);
 
             const response = (await uploadFile(file)) as AxiosResponse;
-            const { data, status } = response as AxiosResponse<IDocumentData>;
-
-            if (status !== 200) {
-                setIsUploading(false);
-                return;
-            }
+            const { data } = response as AxiosResponse<IDocumentData>;
 
             setIsUploading(false);
             setIsFileProcessing(true);
@@ -117,6 +115,16 @@ const Dropzone = () => {
             );
         } catch (error) {
             console.error("File upload or status check failed:", error);
+            if (error instanceof AxiosError) {
+                const { response, status } = error;
+                if (status === 429) {
+                    setErrorMessage(
+                        `${response?.data?.error}, Upgrade to upload more files`
+                    );
+                }
+            }
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -184,6 +192,12 @@ const Dropzone = () => {
                                 {isFileTooLarge && (
                                     <div className="text-red-600 mt-5">
                                         File is too large.
+                                    </div>
+                                )}
+
+                                {errorMessage && (
+                                    <div className="text-red-600 mt-5">
+                                        {errorMessage}
                                     </div>
                                 )}
                             </>

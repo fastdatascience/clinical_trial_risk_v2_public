@@ -21,7 +21,7 @@ LOG_LEVEL = logging.INFO if ENV == "production" else logging.DEBUG
 os.environ["LOGURU_LEVEL"] = os.getenv("LOG_LEVEL") or (DEBUG and "DEBUG") or "INFO"
 os.environ["LOGURU_DEBUG_COLOR"] = "<fg #777>"
 
-__SERVER_VERSION = "1.1.0"
+__SERVER_VERSION = "1.3.0"
 
 # * Redis config
 REDIS_HOST = os.getenv("REDIS_HOST")
@@ -56,7 +56,7 @@ MAIL_SMTP_PORT: int = int(os.getenv("MAIL_SMTP_PORT", "465"))
 MAIL_FROM_ADDRESS = "Fast Data Science <noreply@fastdatascience.net>"
 
 # * Storage provider config
-STORAGE_PROVIDER = cast(Literal["s3", "azure"], os.getenv("STORAGE_PROVIDER", "s3"))
+STORAGE_PROVIDER = cast(Literal["s3", "azure", "local"], os.getenv("STORAGE_PROVIDER", "local"))
 BUCKET_OR_CONTAINER_NAME = os.getenv("BUCKET_OR_CONTAINER_NAME", "fds-cdn")
 CDN_BUCKET_OR_CONTAINER_BASE_PATH = os.getenv("CDN_BUCKET_OR_CONTAINER_BASE_PATH", "cdn")
 

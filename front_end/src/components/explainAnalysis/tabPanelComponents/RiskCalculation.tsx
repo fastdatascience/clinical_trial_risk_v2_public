@@ -4,10 +4,12 @@ import { useAtom } from "jotai";
 import {
     documentRunResultAtom,
     historyRunResultAtom,
+    moduleWeightAtom,
 } from "../../../lib/atoms";
 
 import { CalculationTable } from "../../tables";
 import { NoProtocolUploaded } from "../../common";
+import { transformDataForTable } from "../../../utils/utils";
 
 const TABLE_HEAD = ["Parameter", "Value", "Weight", "Score"];
 
@@ -16,6 +18,7 @@ const removeDescription = (data: ITableRow[]) => {
     return data.map(({ description, ...rest }) => rest);
 };
 const RiskCalculation: React.FC<Result> = () => {
+    const [weightProfile] = useAtom(moduleWeightAtom);
     const [historyRunResult] = useAtom(historyRunResultAtom);
     const [documentRunResult] = useAtom(documentRunResultAtom);
 
@@ -25,8 +28,10 @@ const RiskCalculation: React.FC<Result> = () => {
             : documentRunResult?.trial_risk_table || []
     );
 
+    const tableData = transformDataForTable("risk", TABLE_ROWS, weightProfile!);
+
     return (
-        <div className="flex flex-col justify-center items-center mt-3">
+        <div className="flex flex-col justify-center items-center mt-3 font-poppins">
             <p className=" text-start text-sm leading-6 font-normal  text-text_secondary">
                 The table below shows how the risk of this protocol was
                 calculated. Protocols are scored according to a simple linear
@@ -43,12 +48,14 @@ const RiskCalculation: React.FC<Result> = () => {
 
             {/*  Table with Download to Excel functionality */}
             <div className="flex flex-col mt-3 w-full">
-                {TABLE_ROWS.length > 0 ? (
+                {tableData.length > 0 ? (
                     <CalculationTable
                         isCostTable={false}
                         title="Clinical trial Risk calculation"
                         columns={TABLE_HEAD}
-                        data={TABLE_ROWS}
+                        data={tableData}
+                        originalDocumentName={historyRunResult?.document?.original_document_name}
+                        condition={historyRunResult?.result?.condition?.prediction}
                     />
                 ) : (
                     <NoProtocolUploaded />

@@ -6,8 +6,8 @@ import { normalizeDataForHeatmap } from "../../utils/utils";
 const DecisionForSampleSize: React.FC<{
     sampleSize: SampleSize | undefined;
 }> = ({ sampleSize }) => {
-    const heatmapGrid = normalizeDataForHeatmap(sampleSize!, 5);
     if (!sampleSize) return null;
+    const heatmapGrid = normalizeDataForHeatmap(sampleSize, 5);
     return (
         <div className="flex flex-col justify-center items-center mt-3">
             <p className=" text-start text-sm leading-6 font-normal  text-text_secondary">
@@ -17,7 +17,7 @@ const DecisionForSampleSize: React.FC<{
                 <strong>{(sampleSize?.score * 100).toFixed(1)}%</strong>.
             </p>
 
-            <Heatmap width={700} height={400} data={heatmapGrid} />
+            <Heatmap data={heatmapGrid} />
 
             <ul className="mt-5">
                 {Object.keys(sampleSize.context).map((key) => (

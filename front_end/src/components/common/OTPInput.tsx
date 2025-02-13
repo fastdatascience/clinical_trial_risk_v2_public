@@ -2,8 +2,12 @@ import React, { useMemo } from "react";
 import { RE_DIGIT } from "../../utils/constants";
 import { OtpInputProps } from "../../utils/types";
 
-
-const OtpInput: React.FC<OtpInputProps> = ({ value, valueLength, onChange }) => {
+const OtpInput: React.FC<OtpInputProps> = ({
+    isError,
+    value,
+    valueLength,
+    onChange,
+}) => {
     const valueItems = useMemo(() => {
         const valueArray = value.split("");
         const items = [];
@@ -22,7 +26,8 @@ const OtpInput: React.FC<OtpInputProps> = ({ value, valueLength, onChange }) => 
     }, [value, valueLength]);
 
     const focusToNextInput = (target: HTMLInputElement) => {
-        const nextElementSibling = target.nextElementSibling as HTMLInputElement;
+        const nextElementSibling =
+            target.nextElementSibling as HTMLInputElement;
 
         if (nextElementSibling) {
             nextElementSibling.focus();
@@ -30,7 +35,8 @@ const OtpInput: React.FC<OtpInputProps> = ({ value, valueLength, onChange }) => 
     };
 
     const focusToPrevInput = (target: HTMLInputElement) => {
-        const previousElementSibling = target.previousElementSibling as HTMLInputElement;
+        const previousElementSibling =
+            target.previousElementSibling as HTMLInputElement;
 
         if (previousElementSibling) {
             previousElementSibling.focus();
@@ -78,7 +84,10 @@ const OtpInput: React.FC<OtpInputProps> = ({ value, valueLength, onChange }) => 
         target.setSelectionRange(0, target.value.length);
     };
 
-    const inputOnChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+    const inputOnChange = (
+        e: React.ChangeEvent<HTMLInputElement>,
+        idx: number
+    ) => {
         const target = e.target;
         let targetValue = target.value.trim();
         const isTargetValueDigit = RE_DIGIT.test(targetValue);
@@ -98,7 +107,9 @@ const OtpInput: React.FC<OtpInputProps> = ({ value, valueLength, onChange }) => 
 
         if (targetValueLength === 1) {
             const newValue =
-                value.substring(0, idx) + targetValue + value.substring(idx + 1);
+                value.substring(0, idx) +
+                targetValue +
+                value.substring(idx + 1);
 
             onChange(newValue);
 
@@ -124,7 +135,9 @@ const OtpInput: React.FC<OtpInputProps> = ({ value, valueLength, onChange }) => 
                     pattern="\d{1}"
                     maxLength={valueLength}
                     style={{ backgroundColor: "#E0ECF8" }}
-                    className="flex w-12 h-12  border-none rounded-md text-center text-2xl font-bold leading-none focus:outline-green_primary"
+                    className={`flex w-12 h-12  ${
+                        isError ? "border border-red-600" : "border-none"
+                    }  rounded-md text-center text-2xl font-bold leading-none focus:outline-green_primary`}
                     value={digit}
                     onChange={(e) => inputOnChange(e, idx)}
                     onKeyDown={inputOnKeyDown}

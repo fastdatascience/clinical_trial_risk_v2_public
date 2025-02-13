@@ -3,7 +3,7 @@ services:
         build:
             context: .
             dockerfile: ./docker/api/Dockerfile
-        image: clinical-trials-api-public:latest
+        image: clinical-trials-api:latest
         pull_policy: never
         restart: always
         command: hypercorn --config=hypercorn-docker.toml app.main:app
@@ -11,8 +11,6 @@ services:
             - "5000:5000"
         env_file:
             - back_end/.env
-        environment:
-            STAGE: prod
         depends_on:
             db:
                 condition: service_healthy
@@ -26,8 +24,8 @@ services:
     db:
         image: postgres:latest
         restart: always
-        ports:
-            - "5432:5432"
+        expose:
+            - "5432"
         volumes:
             - postgres_data:/var/lib/postgresql/data/
         environment:
@@ -48,18 +46,18 @@ services:
         build:
             context: .
             dockerfile: ./docker/tika-grpc/Dockerfile
-        image: clinical-trials-tika-grpc-public:latest
+        image: clinical-trials-tika-grpc:latest
         pull_policy: never
         restart: always
         command: java -jar /app/target/fcnlp-tika-grpc-1.0.1-SNAPSHOT-fat.jar
-        ports:
-            - "8888:8888"
+        expose:
+            - "8888"
 
     redis:
         image: "redis:7.2-alpine"
         restart: always
-        ports:
-            - "6379:6379"
+        expose:
+            - "6379"
         healthcheck:
             test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
             interval: 30s
@@ -68,7 +66,7 @@ services:
             start_period: 5s
 
     celery-worker:
-        image: clinical-trials-api-public:latest
+        image: clinical-trials-api:latest
         pull_policy: never
         restart: always
         command: celery -b "redis://redis:6379" -A app.ct_core worker --concurrency=10 -l info
@@ -83,7 +81,7 @@ services:
                 condition: service_healthy
 
     celery-beat:
-        image: clinical-trials-api-public:latest
+        image: clinical-trials-api:latest
         pull_policy: never
         restart: always
         command: celery -b "redis://redis:6379" -A app.ct_core beat -l info -s /tmp/celerybeat-schedule
@@ -97,6 +95,7 @@ services:
         build:
             context: .
             dockerfile: ./docker/front/Dockerfile
+        image: clinical-trials-front:latest
         pull_policy: never
         restart: always
         command: serve -s dist -p 5173

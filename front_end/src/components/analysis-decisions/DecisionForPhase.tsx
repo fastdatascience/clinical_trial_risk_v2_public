@@ -1,12 +1,15 @@
 import React from "react";
-import { Phase } from "../../utils/types";
+import { HeatMapData, Phase } from "../../utils/types";
 import { normalizeDataForHeatmap } from "../../utils/utils";
 import Heatmap from "../charts/Heatmap";
 
 const DecisionForPhase: React.FC<{ phase: Phase | undefined }> = ({
     phase,
 }) => {
-    const heatmapGrid = normalizeDataForHeatmap(phase!);
+    if (!phase) return null;
+    const heatmapGrid = normalizeDataForHeatmap(
+        phase as unknown as HeatMapData<number[]>
+    );
     return (
         <div className="flex flex-col justify-center items-center mt-3">
             <p className=" text-center text-sm leading-6 font-normal  text-text_secondary">
@@ -17,7 +20,7 @@ const DecisionForPhase: React.FC<{ phase: Phase | undefined }> = ({
                 to PHASE were found in the document.
             </p>
 
-            <Heatmap width={500} height={500} data={heatmapGrid} />
+            <Heatmap data={heatmapGrid} />
         </div>
     );
 };

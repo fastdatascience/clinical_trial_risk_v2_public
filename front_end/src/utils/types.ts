@@ -101,6 +101,7 @@ export interface IModalProps {
 }
 
 export interface OtpInputProps {
+    isError?: boolean;
     value: string;
     valueLength: number;
     onChange: (value: string) => void;
@@ -135,6 +136,11 @@ export interface IDocument {
     created_at: Date;
     cost: ITrialCost;
     trial_risk_score: "LOW" | "MEDIUM" | "HIGH";
+}
+
+export interface ITemplateDocument
+    extends Omit<IDocument, "cost" | "trial_risk_score" | "cdn_path"> {
+    system_assigned_name: string;
 }
 
 export interface IHistoryRun {
@@ -183,13 +189,12 @@ export interface IPaginationProps {
 }
 
 export type HeatmapProps = {
-    width: number;
-    height: number;
     data: { x: string; y: string; value: number }[];
 };
 
-export type HeatmapData = Pick<Condition, "pages"> &
-    Partial<Pick<Condition, "annotations">>;
+export type HeatMapData<T> = {
+    pages: { [key: string]: T };
+};
 
 export interface HeatmapCell {
     x: string;
@@ -322,23 +327,528 @@ export interface DocumentRunStatus {
 }
 
 export interface Result {
+    age?: Age;
+    ner?: Ner;
     sap?: Sap;
-    drug?: CancerStage;
+    drug?: Drug;
+    ppie?: Biobank;
+    chemo?: Chemo;
+    child?: Child;
     phase?: Phase;
+    design?: Consent;
+    gender?: Gender;
     biobank?: Biobank;
+    consent?: Consent;
     country?: Country;
+    healthy?: Healthy;
+    interim?: Biobank;
+    placebo?: Biobank;
+    recency?: Recency;
+    regimen?: Regimen;
+    vaccine?: Vaccine;
+    adjuvant?: Adjuvant;
     duration?: Duration;
+    hospital?: Hospital;
+    num_arms?: NumArms;
     condition?: Condition;
     num_sites?: NumSites;
-    num_arms?: Sap;
-    num_visits?: Biobank;
+    radiation?: Radiation;
+    num_visits?: Num;
+    prevalence?: Biobank;
     simulation?: Simulation;
+    cancer_type?: CancerType;
     cohort_size?: Biobank;
     sample_size?: SampleSize;
     cancer_stage?: CancerStage;
+    document_type?: DocumentType;
+    num_endpoints?: NumEndpoints;
+    randomisation?: Consent;
+    model_informed?: Biobank;
+    overnight_stay?: Biobank;
+    platform_trial?: Consent;
     effect_estimate?: EffectEstimate;
-    num_interventions_total?: Biobank;
-    num_interventions_per_visit?: Biobank;
+    human_challenge?: Biobank;
+    master_protocol?: Consent;
+    control_negative?: Biobank;
+    regimen_duration?: RegimenDuration;
+    intervention_type?: InterventionType;
+    num_interventions_total?: Num;
+    num_interventions_per_visit?: Num;
+}
+
+export interface Adjuvant {
+    pages: AdjuvantPages;
+    prediction: PredictionEnum;
+    annotations: Annotation[];
+}
+
+export interface Annotation {
+    text: string;
+    type: PredictionEnum;
+    page_no: number;
+    subtype?: string;
+    end_char: number;
+    start_char: number;
+    value?: ValueClass | string;
+}
+
+export enum PredictionEnum {
+    Adjuvant = "adjuvant",
+    Age = "age",
+    CancerStage = "cancer_stage",
+    CancerType = "cancer_type",
+    Child = "child",
+    Condition = "condition",
+    Drug = "drug",
+    Duration = "duration",
+    Exclusion = "exclusion",
+    Gender = "gender",
+    Healthy = "healthy",
+    Hospital = "hospital",
+    Inclusion = "inclusion",
+    InterventionType = "intervention_type",
+    NumArms = "num_arms",
+    NumPrimaryEndpoints = "num_primary_endpoints",
+    NumSites = "num_sites",
+    Prevalence = "prevalence",
+    Radiation = "radiation",
+    Regimen = "regimen",
+    SampleSize = "sample_size",
+    Vaccine = "vaccine",
+}
+
+export interface ValueClass {
+    lower?: number;
+    upper?: number;
+    name?: string;
+    mesh_id?: string;
+    synonyms?: string[];
+    is_brand?: number;
+    drugbank_id?: string;
+    nhs_url?: string;
+    nhs_api_url?: string;
+    medline_plus_id?: string;
+    text?: string;
+    unit?: string;
+    years?: number;
+    numeric?: number;
+    sample_size?: string;
+}
+
+export interface AdjuvantPages {
+    adjuvant: number[];
+}
+
+export interface Age {
+    pages: AgePages;
+    candidates: Array<Array<number[] | number | string>>;
+    prediction: AgePrediction;
+    annotations: Annotation[];
+    candidates_with_scores: Array<Array<number[] | number | string>>;
+}
+
+export interface AgePages {
+    "3_years": number[];
+    "75_years": number[];
+    "18-75_years": number[];
+    "75_years_old": number[];
+    "18-75_years_old": number[];
+}
+
+export interface AgePrediction {
+    lower: number;
+    upper: number;
+}
+
+export interface Biobank {
+    pages: ContextClass;
+    prediction: number;
+    annotations: unknown[];
+    candidates?: unknown[];
+    probas?: number[];
+}
+
+export interface ContextClass {}
+
+export interface CancerStage {
+    pages: CancerStagePages;
+    candidates: Array<Array<number | string>>;
+    prediction: string[];
+    annotations: Annotation[];
+    candidates_with_scores: number[];
+}
+
+export interface CancerStagePages {
+    metastasis: number[];
+}
+
+export interface CancerType {
+    pages: { [key: string]: number[] };
+    score: number;
+    terms: { [key: string]: number };
+    probas: number[];
+    prediction: string;
+    annotations: Annotation[];
+}
+
+export interface Chemo {
+    pages: ChemoPages;
+    proba: number;
+    prediction: number;
+    annotations: Annotation[];
+}
+
+export interface ChemoPages {
+    cycles: number[];
+    chemotherapy: number[];
+}
+
+export interface Child {
+    pages: ChildPages;
+    proba: number[];
+    prediction: number;
+    annotations: Annotation[];
+}
+
+export interface ChildPages {
+    child?: number[];
+    female: number[];
+    criteria: number[];
+    exclusion: number[];
+    inclusion: number[];
+    eligibility: number[];
+}
+
+export interface Consent {
+    pages: ContextClass;
+    candidates?: unknown[];
+    prediction: string;
+    annotations: unknown[];
+}
+
+export interface Country {
+    logs: string[];
+    pages: ContextClass;
+    context: ContextClass;
+    features: ContextClass;
+    prediction: string[];
+    annotations: unknown[];
+}
+
+export interface DocumentType {
+    candidates: Candidates;
+    prediction: string;
+}
+
+export interface Candidates {
+    icf: number;
+}
+
+export interface Drug {
+    pages: DrugPages;
+    counts: Counts;
+    scores: Array<Array<number | string>>;
+    prediction: unknown[];
+    annotations: Annotation[];
+}
+
+export interface Counts {
+    digoxin: number;
+    anticonvulsants: number;
+    alanine_transaminase: number;
+    alkaline_phosphatase: number;
+    "anti-arrhythmia_agents": number;
+    aspartate_aminotransferases: number;
+}
+
+export interface DrugPages {
+    "": number[];
+    alanine: number[];
+    alkaline: number[];
+    aspartate: number[];
+    antiepileptic: number[];
+    antiarrhythmic: number[];
+}
+
+export interface Duration {
+    pages: DurationPages;
+    score: number;
+    candidates: Array<Array<number | string>>;
+    prediction: number;
+    annotations: Annotation[];
+    is_low_confidence: number;
+}
+
+export interface DurationPages {
+    "12_months": number[];
+    "24_months": number[];
+}
+
+export interface EffectEstimate {
+    logs: string[];
+    pages: EffectEstimatePages;
+    score: number;
+    context: { [key: string]: string };
+    prediction: number;
+    annotations: unknown[];
+    page_scores: number[];
+}
+
+export interface EffectEstimatePages {
+    "12": number[];
+    "24": number[];
+    "50": number[];
+    detect: unknown[];
+    reduction: unknown[];
+    "cohen's_d/h": unknown[];
+    effect_size: unknown[];
+    effect_estimate: unknown[];
+    "relative_risk/rr": unknown[];
+    "odds/hazard/risk_ratio": unknown[];
+    "prevention_efficacy/effectiveness": unknown[];
+}
+
+export interface Gender {
+    pages: ChildPages;
+    proba: number[];
+    prediction: number;
+    annotations: Annotation[];
+    explanation: string;
+}
+
+export interface Healthy {
+    pages: HealthyPages;
+    proba: number[];
+    prediction: number;
+    annotations: Annotation[];
+}
+
+export interface HealthyPages {
+    health: number[];
+    disease: number[];
+    history: number[];
+    illness: number[];
+    criteria: number[];
+    condition: number[];
+    exclusion: number[];
+    inclusion: number[];
+    conditions: number[];
+    eligibility: number[];
+}
+
+export interface Hospital {
+    pages: HospitalPages;
+    prediction: number;
+    annotations: Annotation[];
+}
+
+export interface HospitalPages {
+    hospital: number[];
+}
+
+export interface InterventionType {
+    pages: { [key: string]: number[] };
+    score: number;
+    terms: { [key: string]: number };
+    probas: number[];
+    prediction: PredictionEnum;
+    annotations: Annotation[];
+}
+
+export interface Ner {
+    pages: ContextClass;
+    prediction: Array<string[]>;
+    annotations: Annotation[];
+}
+
+export interface NumArms {
+    logs: string[];
+    pages: { [key: string]: number[] };
+    context: Context;
+    prediction: number;
+    annotations: Annotation[];
+}
+
+export interface Context {
+    two_group: string;
+    two_groups: string;
+}
+
+export interface NumEndpoints {
+    pages: NumEndpointsPages;
+    proba: number;
+    prediction: number;
+    annotations: Annotation[];
+}
+
+export interface NumEndpointsPages {
+    measure: number[];
+    outcome: number[];
+    primary: number[];
+    efficacy: number[];
+    exploratory: number[];
+}
+
+export interface Num {
+    pages: NumInterventionsPerVisitPages;
+    prediction: number;
+}
+
+export interface NumInterventionsPerVisitPages {
+    schedule_of_events: number[];
+}
+
+export interface NumSites {
+    pages: ContextClass;
+    candidates: unknown[];
+    prediction: number;
+    annotations: Annotation[];
+    num_phone_numbers: number;
+    num_mentions_multi_site: number;
+    num_mentions_single_site: number;
+}
+
+export interface Phase {
+    logs: string[];
+    pages: ContextClass;
+    probas: ContextClass;
+    context: ContextClass;
+    prediction: number;
+    annotations: unknown[];
+    probas_corrected: ProbasCorrected;
+}
+
+export interface ProbasCorrected {
+    phase_0: number;
+    phase_1: number;
+    phase_2: number;
+    phase_3: number;
+    phase_4: number;
+    "phase_0.5": number;
+    "phase_1.5": number;
+    "phase_2.5": number;
+}
+
+export interface Radiation {
+    pages: RadiationPages;
+    proba: number;
+    prediction: number;
+    annotations: Annotation[];
+}
+
+export interface RadiationPages {
+    radiotherapy: number[];
+}
+
+export interface Recency {
+    pages: RecencyPages;
+    prediction: number;
+    annotations: Annotation[];
+}
+
+export interface RecencyPages {
+    "31_october": number[];
+    october_2019: number[];
+    "31_october_2019": number[];
+}
+
+export interface Regimen {
+    pages: RegimenPages;
+    contexts: unknown[];
+    candidates: CandidateClass[];
+    prediction: RegimenPrediction;
+    annotations: Annotation[];
+}
+
+export interface CandidateClass {
+    end_idx: number;
+    page_no: number;
+    frequency: string;
+    start_idx: number;
+    dosage_number: number;
+    distance_to_drug: number;
+    distance_to_regimen: number;
+}
+
+export interface RegimenPages {
+    every_three_months: number[];
+}
+
+export interface RegimenPrediction {
+    doses_per_day: number;
+    days_between_doses: number;
+    multiple_doses_per_day: number;
+}
+
+export interface RegimenDuration {
+    pages: RegimenDurationPages;
+    contexts: unknown[];
+    candidates: unknown[];
+    prediction: RegimenDurationPrediction;
+    annotations: unknown[];
+}
+
+export interface RegimenDurationPages {
+    cr: number[];
+    death: number[];
+    response: number[];
+    metastasis: number[];
+    complete_response: number[];
+}
+
+export interface RegimenDurationPrediction {
+    until_progression: number;
+}
+
+export interface SampleSize {
+    logs: string[];
+    pages: { [key: string]: number[] };
+    proba: Proba;
+    score: number;
+    comment: string;
+    context: { [key: string]: string };
+    is_per_arm: unknown[];
+    prediction: number;
+    annotations: Annotation[];
+    is_low_confidence: number;
+}
+
+export interface Proba {
+    "9": number;
+}
+
+export interface Sap {
+    logs: string[];
+    pages: { [key: string]: number[] };
+    score: number;
+    prediction: number;
+    page_scores: number[];
+}
+
+export interface Simulation {
+    pages: PurplePages;
+    score: number;
+    context: ContextClass;
+    prediction: number;
+    annotations: unknown[];
+    page_scores: number[];
+}
+
+export interface PurplePages {
+    power: unknown[];
+    sample: number[];
+    simulate: unknown[];
+    scenarios: unknown[];
+    sample_size: number[];
+}
+
+export interface Vaccine {
+    pages: { [key: string]: number[] };
+    score: number;
+    terms: { [key: string]: number };
+    probas: number[];
+    prediction: number;
+    annotations: Annotation[];
 }
 
 export interface SelectInputProps {
@@ -361,19 +871,12 @@ export interface Biobank {
 export interface CancerStage {}
 
 export interface Condition {
-    annotations: IAnnotation[];
+    annotations: Annotation[];
     pages: { [key: string]: number[] };
     score: number;
     terms: { [key: string]: number };
     probas: number[];
     prediction: string;
-}
-
-export interface Country {
-    pages: { [key: string]: number[] };
-    context: { [key: string]: string };
-    features: Features;
-    prediction: string[];
 }
 
 export interface Features {
@@ -384,48 +887,6 @@ export interface Features {
 export interface CountryPages {
     jp: number[];
     us: number[];
-}
-
-export interface Duration {
-    candidates: Array<Array<number | string>>;
-    prediction: string;
-}
-
-export interface EffectEstimate {
-    pages: { [key: string]: number[] };
-    score: number;
-    context: { [key: string]: string };
-    prediction: number;
-    page_scores: number[];
-}
-
-export interface EffectEstimatePages {
-    "10": number[];
-    "80": number[];
-    detect: number[];
-    reduction: number[];
-    "cohen's_d/h": { [key: string]: string }[];
-    effect_size: { [key: string]: string }[];
-    effect_estimate: { [key: string]: string }[];
-    "relative_risk/rr": { [key: string]: string }[];
-    "odds/hazard/risk_ratio": { [key: string]: string }[];
-    "prevention_efficacy/effectiveness": { [key: string]: string }[];
-}
-
-export interface NumSites {
-    candidates: { [key: string]: string }[];
-    prediction: number;
-    num_phone_numbers: number;
-    num_mentions_multi_site: number;
-    num_mentions_single_site: number;
-}
-
-export interface Phase {
-    pages: { [key: string]: number[] };
-    probas: CancerStage;
-    context: CancerStage;
-    prediction: number;
-    probas_corrected: ProbasCorrected;
 }
 
 export interface ProbasCorrected {
@@ -439,28 +900,9 @@ export interface ProbasCorrected {
     "phase_2.5": number;
 }
 
-export interface SampleSize {
-    pages: { [key: string]: number[] };
-    proba: { [key: string]: number };
-    score: number;
-    comment: string;
-    context: { [key: string]: string };
-    is_per_arm: { [key: string]: string }[];
-    prediction: number;
-    is_low_confidence: number;
-}
-
 export interface Sap {
     pages: { [key: string]: number[] };
     score: number;
-    prediction: number;
-    page_scores: number[];
-}
-
-export interface Simulation {
-    pages: { [key: string]: number[] };
-    score: number;
-    context: CancerStage;
     prediction: number;
     page_scores: number[];
 }
@@ -517,6 +959,20 @@ export interface ITableRow {
     formula?: string;
 }
 
+export interface ISheetJsTableCell {
+    t: string
+    v: string | number | undefined
+    f?: string
+}
+
+export interface ITableRowWithCellObj {
+    feature: ISheetJsTableCell;
+    description?: ISheetJsTableCell;
+    value: ISheetJsTableCell;
+    weight?: ISheetJsTableCell;
+    score?: ISheetJsTableCell;
+}
+
 export interface IModuleWeight {
     cost: number;
     risk: number;
@@ -541,16 +997,19 @@ export interface Content {
     name: string;
 }
 
-// This is new type
+export interface NestedCostRiskModel {
+    [key: string]: CostRiskModel | NestedCostRiskModel;
+}
+
 export interface Weights {
-    cost_risk_models: { [key: string]: CostRiskModel };
-    sample_size_tertiles: SampleSizeTertile[];
-    risk_thresholds: RiskThresholds;
+    cost_risk_models: Record<string, CostRiskModel | NestedCostRiskModel>;
+    sample_size_tertiles?: SampleSizeTertile[];
+    risk_thresholds?: RiskThresholds;
 }
 
 export interface CostRiskModel {
-    cost: number;
-    risk: number;
+    cost?: number;
+    risk?: number;
 }
 
 export interface RiskThresholds {
@@ -579,16 +1038,6 @@ export enum ConditionType {
 export interface IWeightProfile {
     name: string;
     weights: Weights;
-}
-
-export interface IAnnotation {
-    text: string;
-    type: string;
-    value: Value;
-    page_no: number;
-    subtype: string;
-    end_char: number;
-    start_char: number;
 }
 
 export interface Value {

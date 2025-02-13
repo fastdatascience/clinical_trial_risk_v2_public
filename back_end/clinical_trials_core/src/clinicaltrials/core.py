@@ -177,6 +177,182 @@ class Document:
 
 
 @dataclass
+class ClassifierConfig:
+    path_to_classifier: str = ""
+    # * Provide custom path to persist models. Defaults to volatile storage path
+    classifier_storage_path: str = get_default_classifier_storage_path()
+
+
+class ClassifierConfigException(Exception):
+    def __init__(self, message: str = "Missing Classifier configuration") -> None:
+        super().__init__(message)
+
+
+@dataclass
+class MetadataOption:
+    label: str
+    value: str | int
+
+
+@dataclass
+class Metadata:
+    id: str
+    name: str
+    feature_type: Literal["yesno", "categorical", "numeric", "multi_label", "key_value_list", "numeric_range"]
+    options: list[MetadataOption] | list[dict[str, str]] = field(default_factory=list)
+    default_weights: dict[str, float] = field(default_factory=dict)
+
+    def __post_init__(self):
+        # * Ensure "cost" and "risk" are in default_weights with default values if not provided
+        self.default_weights.setdefault("cost", 0.0)
+        self.default_weights.setdefault("risk", 0.0)
+
+        self.validate()
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    def get_description(self, selected_value):
+        if self.feature_type in ["numeric", "yesno"] or self.id == "phase":
+            return self.name
+        if self.feature_type == "multi_label":
+            if isinstance(selected_value, list) and selected_value:
+                return ", ".join(str(value) for value in selected_value)
+            return "_"
+        if isinstance(selected_value, list):
+            return ", ".join(str(value) for value in selected_value)
+        return str(selected_value) if selected_value is not None else "_"
+
+    def get_value(self, selected_value, prediction):
+        if self.id != "phase" and self.feature_type in ["categorical", "multi_label", "numeric_range"]:
+            if selected_value or isinstance(selected_value, list):
+                return 1
+            return 0
+        if self.feature_type == "yesno":
+            if selected_value in ["yes", "no"]:
+                return 1 if selected_value == "yes" else 0
+
+        if selected_value:
+            return selected_value
+        return prediction
+
+    def validate(self):
+        """
+        Validate the options based on the feature_type.
+
+        Raises:
+            ValueError: If feature_type is 'key_value_list' and any option is not a dictionary.
+            ValueError: If feature_type is not 'key_value_list' and any option is not an instance of MetadataOption.
+
+        Examples:
+            >>> # Valid example for feature_type 'key_value_list'
+            >>> metadata = Metadata(
+            >>>     id="123",
+            >>>     name="Example Metadata",
+            >>>     feature_type="key_value_list",
+            >>>     options=[{"key1": "value1"}, {"key2": "value2"}]
+            >>> )
+            >>> metadata.validate()  # Should pass without error
+
+            >>> # Invalid example for feature_type 'key_value_list'
+            >>> metadata = Metadata(
+            >>>     id="123",
+            >>>     name="Example Metadata",
+            >>>     feature_type="key_value_list",
+            >>>     options=[MetadataOption(label="Option1", value="Value1")]
+            >>> )
+            >>> metadata.validate()  # Should raise ValueError
+
+            >>> # Valid example for feature_type 'categorical'
+            >>> metadata = Metadata(
+            >>>     id="123",
+            >>>     name="Example Metadata",
+            >>>     feature_type="categorical",
+            >>>     options=[MetadataOption(label="Option1", value="Value1")]
+            >>> )
+            >>> metadata.validate()  # Should pass without error
+
+            >>> # Invalid example for feature_type 'categorical'
+            >>> metadata = Metadata(
+            >>>     id="123",
+            >>>     name="Example Metadata",
+            >>>     feature_type="categorical",
+            >>>     options=[{"key1": "value1"}, {"key2": "value2"}]
+            >>> )
+            >>> metadata.validate()  # Should raise ValueError
+        """
+        if self.feature_type == "key_value_list":
+            if not all(isinstance(option, dict) for option in self.options):
+                raise ValueError("All options must be dictionaries for key_value_list feature type")
+        else:
+            if not all(isinstance(option, MetadataOption) for option in self.options):
+                raise ValueError(f"All options must be MetadataOption instances for {self.feature_type} feature type")
+
+
+class BaseProcessor(ABC):
+    """Base class for all processors."""
+
+    def __init__(self, module_name: str = "base_processor") -> None:
+        super().__init__()
+
+        self.logger = logging.getLogger()
+        self.logger.name = __class__.__name__
+
+        # * Points to the classname of child classes
+        self.__module_name = module_name
+
+        self.config: ClassifierConfig | None = None
+
+    @abstractmethod
+    def process(self, document: Document, config: ClassifierConfig | None = None):
+        raise NotImplementedError("Subclasses must implement the 'process' method.")
+
+    @property
+    @abstractmethod
+    def metadata(self) -> Metadata | None:
+        """Optional metadata property to be defined in child classes."""
+        return None
+
+    def set_config(self, config: ClassifierConfig) -> Self:
+        self.config = config
+        return self
+
+    @property
+    def module_name(self) -> str:
+        return "".join(["_" + char.lower() if char.isupper() else char for char in self.__module_name]).lstrip("_")
+
+    def get_classifier_config_or_default(self, config: ClassifierConfig | None) -> ClassifierConfig:
+        if config and config.path_to_classifier:
+            return config
+
+        key = self.module_name
+        self.logger.info(f"Get classifier config for module {key}")
+
+        if key not in CLASSIFIER_BIN:
+            self.logger.error(f"Invalid module {key}")
+            raise ClassifierConfigException()
+
+        remote_file_path = CLASSIFIER_BIN[key]
+
+        file_name = remote_file_path.split("/")[-1]
+
+        # * Just to make sure, should not hit edge case but its here for good measures
+        if self.config is None:
+            self.logger.info("Config is None, creating new default config")
+            self.config = ClassifierConfig(path_to_classifier="")
+
+        if not path.exists(path=f"{self.config.classifier_storage_path.rstrip('/')}/{file_name}"):
+            CoreUtil.sync_classifier_models(config=self.config, key=key)
+
+        # * Set the full path in case of direct classifier else set the directory that contains multiple classifiers
+        self.config.path_to_classifier = (
+            f"{self.config.classifier_storage_path.rstrip('/')}/{file_name}" if not file_name.endswith(".zip") else self.config.classifier_storage_path.rstrip("/")
+        )
+
+        return self.config
+
+
+@dataclass
 class EventData:
     data: Any
     type: Literal["completion_progress", "message"]
@@ -248,7 +424,6 @@ class ClinicalTrial:
     __loaded_modules: dict[str, type[BaseProcessor]] = {
         "drug": Drug,
         "phase": Phase,
-        "cancer": CancerStage,
         "condition": Condition,
         "country": Country,
         "effect_estimate": EffectEstimate,

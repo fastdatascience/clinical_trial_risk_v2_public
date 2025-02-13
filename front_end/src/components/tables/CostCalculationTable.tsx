@@ -1,15 +1,9 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { IoSearchOutline } from "react-icons/io5";
-import {
-    Button,
-    Card,
-    CardBody,
-    Input,
-    Typography,
-} from "@material-tailwind/react";
-import { IModuleWeight, ITableRow } from "../../utils/types";
+import { Card, CardBody, Input, Typography } from "@material-tailwind/react";
+import { ISheetJsTableCell, ITableRow, ITableRowWithCellObj, Weights } from "../../utils/types";
 import ExcelExport from "./ExcelExport";
-import { formatCurrency, generateDropdownOptions } from "../../utils/utils";
+import { formatCurrency, generateDropdownOptions, isNumeric } from "../../utils/utils";
 import { SelectInput } from "../common";
 import { useAtom } from "jotai";
 import {
@@ -17,25 +11,25 @@ import {
     moduleWeightAtom,
     weightProfilesAtom,
 } from "../../lib/atoms";
-import { FaPlus } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom";
 
 const CalculationTable = ({
     isCostTable,
     title,
     columns,
     data,
+    originalDocumentName,
+    condition
 }: {
     isCostTable: boolean;
     title: string;
     columns: string[];
     data: ITableRow[];
+    originalDocumentName?: string;
+    condition?: string;
 }) => {
     const [weightProfiles] = useAtom(weightProfilesAtom);
     const [, setModuleWeight] = useAtom(moduleWeightAtom);
     const [historyRunResult] = useAtom(historyRunResultAtom);
-
-    const navigate = useNavigate();
 
     const [tableData, setTableData] = useState<ITableRow[]>(data);
     const [filteredData, setFilteredData] = useState<ITableRow[]>(data);
@@ -56,6 +50,142 @@ const CalculationTable = ({
             setSampleSize(Number(sampleSizeRow?.value) ?? 1);
         }
     }, [data]);
+    
+    let excelExportColumns: string []
+    if (isCostTable) {
+        excelExportColumns = ["feature", "description", "value", "weight", "score"]
+    } else {
+        excelExportColumns = ["feature", "value", "weight", "score"]
+    }
+
+    /**
+     * This callback function will create a new array of table rows that uses cell objects e.g. {t: "n", v: 10, f: "B1*C1"}.
+     */
+    const excelExportData = useCallback(() => {
+        /**
+         * Return the value as a number or an empty string if the value is not a number.
+         */
+        const getValueAsNumber = (value: string | number | undefined) => {
+            // Check if value is a number and if so return it
+            if (typeof value === "number") {
+                return value as number;
+            } 
+            
+            // Check if string is a number and if so return it as a number
+            else if (typeof value === "string" && isNumeric(value)) {
+                return Number(value);
+            }
+            
+            // Return an empty string if value is not a number
+            return "";
+        }
+        
+
+        if (filteredData) {
+            // Column letters
+            const valueColumnLetter = String.fromCharCode(excelExportColumns.indexOf("value") + "A".charCodeAt(0))
+            const weightColumnLetter = String.fromCharCode(excelExportColumns.indexOf("weight") + "A".charCodeAt(0))
+            const scoreColumnLetter = String.fromCharCode(excelExportColumns.indexOf("score") + "A".charCodeAt(0))
+            
+            // Export data
+            const exportData: ITableRowWithCellObj[] = [];
+            
+            // Data start row (row 1 is the header)
+            let dataStartRow = 2
+
+            // Add row with filename
+            if (originalDocumentName) {
+                exportData.push({
+                    feature: {t: "s", v: originalDocumentName},
+                    value: {t: "s", v: ""},
+                    weight: {t: "s", v: ""},
+                    score: {t: "s", v: "",},
+                });
+                
+                dataStartRow += 1;
+            }
+
+            // Add row with condition
+            if (condition) {
+                if (isCostTable) {
+                    exportData.push({
+                        feature: {t: "s", v: "Trial is for condition"},
+                        description: {t: "s", v: condition},
+                        value: {t: "s", v: ""},
+                        weight: {t: "s", v: ""},
+                        score: {t: "s", v: "",},
+                    });
+                } else {
+                    exportData.push({
+                        feature: {t: "s", v: "Trial is for condition"},
+                        value: {t: "s", v: condition},
+                        weight: {t: "s", v: ""},
+                        score: {t: "s", v: "",},
+                    });
+                }
+
+                dataStartRow += 1;
+            }
+            
+            // Data rows
+            for (let i = 0; i < filteredData.length; i++) {
+                const currentRow = i + dataStartRow;
+
+                const weightV = getValueAsNumber(filteredData[i].weight)
+                const weightT = typeof weightV === "number" ? "n" : "s"
+
+                const valueV = getValueAsNumber(filteredData[i].value)
+                const valueT = typeof valueV === "number" ? "n" : "s"
+                
+                let score: ISheetJsTableCell
+                if (typeof weightV === "number" && typeof valueV === "number") {
+                    score = {t: "n", v: filteredData[i].score, f: `${valueColumnLetter}${currentRow}*${weightColumnLetter}${currentRow}+RAND()*0`}
+                } else {
+                    score = {t: "s", v: filteredData[i].score}
+                }
+
+                exportData.push({
+                    feature: {t: "s", v: filteredData[i].feature},
+                    ...(isCostTable) && { description: {t: "s", v: filteredData[i].description} },
+                    value: {t: valueT, v: valueV},
+                    weight: {t: weightT, v: weightV},
+                    score: score,
+                });
+            }
+
+            // Add total score row
+            if (!isCostTable) {
+                exportData.push({
+                    feature: {t: "s", v: "Total score (50-100=low risk, 0-40=high risk)"},
+                    value: {t: "s", v: ""},
+                    weight: {t: "s", v: ""},
+                    score: {t: "n", v: 0, f: `MAX(0,MIN(100,SUM(${scoreColumnLetter}${dataStartRow}:${scoreColumnLetter}${exportData.length + 1})))+RAND()*0`},
+                });
+            } else {
+                exportData.push({
+                    feature: {t: "s", v: "Total score"},
+                    description: {t: "s", v: ""},
+                    value: {t: "s", v: ""},
+                    weight: {t: "s", v: ""},
+                    score: {t: "n", v: 0, f: `SUM(${scoreColumnLetter}${dataStartRow}:${scoreColumnLetter}${exportData.length + 1})+RAND()*0`},
+                });
+            }
+
+            // Add risk level row
+            if (!isCostTable) {
+                exportData.push({
+                    feature: {t: "s", v: "Risk level"},
+                    value: {t: "s", v: ""},
+                    weight: {t: "s", v: ""},
+                    score: {t: "n", v: 0, f: `IF(${scoreColumnLetter}${exportData.length + 1}<40,"HIGH",IF(${scoreColumnLetter}${exportData.length + 1}<50,"MEDIUM","LOW"))`},
+                });
+            }
+
+            return exportData;
+        } else {
+            return [];
+        }
+    }, [filteredData, isCostTable, excelExportColumns, originalDocumentName, condition]);
 
     /* 
     this function handle weight change and calculates score 
@@ -115,10 +245,10 @@ const CalculationTable = ({
 
         const filteredData = searchQuery
             ? tableData?.filter((row) =>
-                  row.feature
-                      .toLowerCase()
-                      .includes(event.target?.value?.toLowerCase())
-              )
+                row.feature
+                    .toLowerCase()
+                    .includes(event.target?.value?.toLowerCase())
+            )
             : tableData;
 
         // Update table data with filtered data
@@ -131,14 +261,20 @@ const CalculationTable = ({
             (_profile) => _profile.name === profile
         );
 
-        const weights = filteredWightProfiles?.reduce((acc, weights) => {
-            return {
-                ...acc,
-                ...weights.weights.cost_risk_models,
-            };
-        }, {} as IModuleWeight);
+        const weights = filteredWightProfiles?.reduce((acc, currentProfile) => {
+            if (currentProfile?.weights?.cost_risk_models) {
+                return {
+                    ...acc,
+                    ...currentProfile.weights.cost_risk_models,
+                };
+            }
+            return acc;
+        }, {} as Weights);
 
-        setModuleWeight(weights || {});
+        setModuleWeight((prev) => ({
+            ...prev,
+            cost_risk_models: weights || {},
+        }));
     };
 
     return (
@@ -150,8 +286,9 @@ const CalculationTable = ({
                         {title}
                     </Typography>
                     <ExcelExport
-                        data={filteredData}
-                        fileName={"cost_calculation"}
+                        data={excelExportData}
+                        header={excelExportColumns}
+                        fileName={isCostTable ? "cost_calculation" : "risk_calculation"}
                     />
                 </div>
 
@@ -173,26 +310,19 @@ const CalculationTable = ({
                     </div>
 
                     <div className="md:w-64 md:flex md:justify-end md:items-center w-full ">
-                        {weightProfiles?.[0]?.default ? (
-                            <Button
-                                size="sm"
-                                variant="outlined"
-                                onClick={() => navigate("/settings")}
-                                className="flex border border-text_primary text-text_primary  items-center gap-3 justify-center "
-                            >
-                                <FaPlus size={16} />
-                                Add Weight Profile
-                            </Button>
-                        ) : (
-                            <SelectInput
-                                value={selectedProfile}
-                                placeholder="Select weight profile..."
-                                options={weight_profile_options}
-                                onChange={(value) =>
-                                    handleSelectWeightProfile(value)
-                                }
-                            />
-                        )}
+                        <SelectInput
+                            value={
+                                selectedProfile ||
+                                weightProfiles?.find(
+                                    (profile) => profile.default
+                                )?.name
+                            }
+                            placeholder={"Select weight profile..."}
+                            options={weight_profile_options}
+                            onChange={(value) =>
+                                handleSelectWeightProfile(value)
+                            }
+                        />
                     </div>
                 </div>
 
@@ -254,7 +384,9 @@ const CalculationTable = ({
                                 <span className="font-semibold">
                                     Total Score:{" "}
                                     {historyRunResult
-                                        ? historyRunResult.trial_risk_score_numeric
+                                        ? Math.trunc(
+                                              historyRunResult.trial_risk_score_numeric
+                                          )
                                         : Math.trunc(totalCostPerParticipant)}
                                 </span>{" "}
                                 (50-100=low risk, 0-40=high risk)
@@ -319,7 +451,7 @@ const TableRow = React.memo(
         onWeightChange: (index: number, newWeight: number) => void;
         classes: string;
     }) => {
-        const { feature, description, value, weight, score, formula } = row;
+        const { feature, description, value, weight, formula } = row;
 
         return (
             <tr key={feature}>
@@ -355,7 +487,7 @@ const TableRow = React.memo(
                 <td className={classes}>
                     <input
                         type="number"
-                        value={weight}
+                        value={Math.trunc(Number(weight))}
                         min={0}
                         onChange={(e) =>
                             onWeightChange(index, parseFloat(e.target.value))
@@ -369,7 +501,7 @@ const TableRow = React.memo(
                         color="blue-gray"
                         className="font-normal"
                     >
-                        {score}
+                        {Math.trunc(Number(value) * Number(weight))}
                     </Typography>
                 </td>
                 {formula && (

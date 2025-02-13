@@ -4,7 +4,8 @@ import Heatmap from "../charts/Heatmap";
 import { normalizeDataForHeatmap } from "../../utils/utils";
 
 const DecisionForSAP: React.FC<{ sap: Sap | undefined }> = ({ sap }) => {
-    const heatmapGrid = normalizeDataForHeatmap(sap!);
+    if (!sap) return null;
+    const heatmapGrid = normalizeDataForHeatmap(sap);
 
     return (
         <div className="flex flex-col justify-center items-center mt-3">
@@ -19,7 +20,7 @@ const DecisionForSAP: React.FC<{ sap: Sap | undefined }> = ({ sap }) => {
                     Graph of key SAP related terms by page number in document.
                 </h3>
 
-                <Heatmap width={700} height={700} data={heatmapGrid} />
+                <Heatmap data={heatmapGrid} />
             </div>
         </div>
     );

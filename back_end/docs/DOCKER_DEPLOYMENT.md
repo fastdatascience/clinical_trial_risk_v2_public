@@ -69,29 +69,13 @@ cd ~/clinical_trials_backend/clinical_trials_core
 git pull origin main
 ```
 
-### 2.3 Download classifiers
-
-Download classifiers on your local machine:
-
-```bash
-# Create the dir classifiers at the root of the project
-cd ~/clinical_trials_backend
-mkdir classifiers
-
-# Install the core package
-pip install ./clinical_trials_core
-
-# Download classifiers
-python3 cli --download-models --download-path /home/[YOUR_USERNAME]/clinical_trials_backend/classifiers
-```
-
-### 2.4 Copy `clinical_trials_backend` to the server
+### 2.3 Copy `clinical_trials_backend` to the server
 
 Use a software such as `WinSCP` or `FileZilla` to transfer the dir.
 
 - Copy `~/clinical_trials_backend` to the home dir on the server.
 
-### 2.5 Environment variables
+### 2.4 Environment variables
 
 Copy `.env.example` to `.env` and configure the env variables.
 
@@ -167,4 +151,4 @@ The following command will build a new image and only restart the `api` containe
 sudo docker compose up --no-deps -d --build api
 ```
 
-To also restart the `Celery` containers, you can add `celery_worker` and `celery_beat` after `--build`.
+To also restart the `Celery` containers, you can add `celery-worker` and `celery-beat` after `--build`.

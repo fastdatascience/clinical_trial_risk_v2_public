@@ -36,7 +36,7 @@ const userRefreshTokenAtom = atomWithStorage("refresh_token", null);
 const processResultAtom = atom<Result | object>({});
 const trialCostTableAtom = atom<ITableRow[] | []>([]);
 const metaDataAtom = atom<Metadata[] | []>([]);
-const moduleWeightAtom = atom<Weights | object>({});
+const moduleWeightAtom = atom<Weights>();
 const weightProfilesAtom = atom<Content[] | undefined>([]);
 const runLogs = atom<Array<string> | []>([]);
 const selectedParamAtom = atom<{ [key: string]: string }>({});
@@ -52,6 +52,7 @@ const documentRunResultAtom = atom<RunStatus | null>(null);
 const uploadProgressAtom = atom<number>(0);
 const documentIdAtom = atom<number>(0);
 const docInProgressIdAtom = atom<number | null>(null);
+const openEmailVerificationAtom = atom<boolean>(false);
 
 export {
     runLogs,
@@ -78,5 +79,6 @@ export {
     userRefreshTokenAtom,
     historyRunResultAtom,
     documentRunResultAtom,
+    openEmailVerificationAtom,
     filteredWeightProfilesAtom,
 };

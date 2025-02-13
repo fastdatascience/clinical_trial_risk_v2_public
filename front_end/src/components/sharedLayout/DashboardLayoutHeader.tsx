@@ -3,7 +3,7 @@ import styles from "../../utils/styles";
 
 const DashboardLayoutHeader: React.FC = () => {
     return (
-        <div className="flex flex-wrap justify-between items-center p-10 text-Midnight_Blue font-poppins">
+        <div className="flex flex-wrap  justify-between items-center p-10 text-Midnight_Blue">
             <div className={`${styles.headingContainer}`}>
                 <h1 className="text-3xl font-semibold">
                     Clinical Trial Risk Tool by Fast Data Science

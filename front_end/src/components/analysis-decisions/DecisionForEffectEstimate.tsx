@@ -1,14 +1,16 @@
 import React from "react";
-import { EffectEstimate } from "../../utils/types";
+import { EffectEstimate, HeatMapData } from "../../utils/types";
 import Heatmap from "../charts/Heatmap";
 import { normalizeDataForHeatmap } from "../../utils/utils";
 
 const DecisionForEffectEstimate: React.FC<{
     estimate: EffectEstimate | undefined;
 }> = ({ estimate }) => {
-    const heatmapGrid = normalizeDataForHeatmap(estimate!, 20);
-
     if (!estimate) return null;
+    const heatmapGrid = normalizeDataForHeatmap(
+        estimate as unknown as HeatMapData<number[]>,
+        20
+    );
 
     return (
         <div className="flex flex-col justify-center items-center mt-3">
@@ -22,7 +24,7 @@ const DecisionForEffectEstimate: React.FC<{
                 in the document.
             </p>
 
-            <Heatmap width={700} height={500} data={heatmapGrid} />
+            <Heatmap data={heatmapGrid} />
             <div className="flex flex-col  mt-8">
                 <h3 className="text-text_secondary text-start font-semibold text-base">
                     Possible mentions of EFFECT ESTIMATE in the document

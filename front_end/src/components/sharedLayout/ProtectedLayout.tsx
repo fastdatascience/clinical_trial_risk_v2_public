@@ -13,7 +13,7 @@ const ProtectedLayout: React.FC = () => {
 
     if (isAuthenticated || !!localStorage.getItem(TOKEN_STORAGE_KEY)) {
         return (
-            <div className="bg-green_secondary flex overflow-auto">
+            <div className="bg-green_secondary flex overflow-auto font-poppins">
                 <SideBar />
                 <div className="md:pl-20 md:w-full h-screen">
                     <DashboardLayoutHeader />

@@ -1,11 +1,11 @@
 from enum import Enum
 from typing import Any
 
+import numpy as np
 from clinicaltrials.core import Metadata as ClinicalTrialMetadata
 from pydantic import BaseModel
 
-from app.models.weight_profile.base import RiskThresholdsDict, SampleSizeTertile, UserWeightProfile, WeightProfile, \
-    WeightProfileBase
+from app.models.weight_profile.base import RiskThresholdsDict, SampleSizeTertile, UserWeightProfile, WeightProfile, WeightProfileBase
 
 # * List of low to medium income countries
 LMIC_COUNTRIES = {
@@ -229,8 +229,7 @@ class TrialSize(Enum):
         return self.label
 
     @classmethod
-    def get_trial_size(cls, condition: str, phase: float, sample_size: int,
-                       sample_size_tertiles: list[SampleSizeTertile]) -> "TrialSize":
+    def get_trial_size(cls, condition: str, phase: float, sample_size: int, sample_size_tertiles: list[SampleSizeTertile]) -> "TrialSize":
         """
         Determine the trial size based on condition, phase, and sample size
 
@@ -246,9 +245,7 @@ class TrialSize(Enum):
         # * Find the first matching tertile based on priority
         matching_tertile = None
         for cond, ph in priority:
-            matching_tertile = next(
-                (tertile for tertile in sample_size_tertiles if tertile.condition == cond and tertile.phase == ph),
-                None)
+            matching_tertile = next((tertile for tertile in sample_size_tertiles if tertile.condition == cond and tertile.phase == ph), None)
             if matching_tertile:
                 break
 
@@ -265,8 +262,7 @@ class TrialSize(Enum):
 
 
 def transform_data_for_rac(
-    metadata: list[ClinicalTrialMetadata], result: dict, module_weight: WeightProfile | UserWeightProfile,
-    selected_param: dict
+    metadata: list[ClinicalTrialMetadata], result: dict, module_weight: WeightProfile | UserWeightProfile, selected_param: dict
 ) -> tuple[list[CTNode], list[CTNode]]:
     """
     General transformer for risk and cost
@@ -278,7 +274,7 @@ def transform_data_for_rac(
     risk_nodes: list[CTNode] = []
 
     for meta in metadata or []:
-        if meta.feature_type == "text":
+        if meta.feature_type == "text" and meta.id != "drug":
             continue
 
         prediction = result.get(meta.id, {}).get("prediction")
@@ -291,6 +287,20 @@ def transform_data_for_rac(
         description = meta.get_description(selected_value=selected_value)
         value = meta.get_value(selected_value, prediction)
 
+        if meta.id == "drug":
+            prediction = result.get(meta.id, {}).get("prediction")
+            if type(prediction) is list:
+                num_drugs = len(prediction)
+            else:
+                num_drugs = 1
+
+            dummy_key = "num_drugs"
+
+            cost_nodes.append(CTNode.create_node(feature=dummy_key, description=description, value=num_drugs, weight=cost_weight))
+            risk_nodes.append(CTNode.create_node(feature=dummy_key, description=description, value=num_drugs, weight=risk_weight))
+
+            continue
+
         if meta.id in ["regimen", "age"]:
             dummy_weights = mapped_weights.get_cost_risk_model_for_dummy_variable(key=f"{meta.id}=")
 
@@ -302,10 +312,8 @@ def transform_data_for_rac(
                     cost_weight = dummy_weights.get_cost_by_name(name=key)
                     risk_weight = mapped_weights.get_risk_by_name(name=key)
 
-                    cost_nodes.append(CTNode.create_node(feature=dummy_key, description=description, value=sub_value,
-                                                         weight=cost_weight))
-                    risk_nodes.append(CTNode.create_node(feature=dummy_key, description=description, value=sub_value,
-                                                         weight=risk_weight))
+                    cost_nodes.append(CTNode.create_node(feature=dummy_key, description=description, value=sub_value, weight=cost_weight))
+                    risk_nodes.append(CTNode.create_node(feature=dummy_key, description=description, value=sub_value, weight=risk_weight))
                 continue
 
         if meta.id == "regimen_duration":
@@ -342,12 +350,10 @@ def transform_data_for_rac(
 
             # * Add international feature to both cost and risk
             cost_nodes.append(
-                CTNode.create_node(feature="international", description=f"Is international: {international_value}",
-                                   value=international_value, weight=international_cost_weight)
+                CTNode.create_node(feature="international", description=f"Is international: {international_value}", value=international_value, weight=international_cost_weight)
             )
             risk_nodes.append(
-                CTNode.create_node(feature="international", description=f"Is international: {international_value}",
-                                   value=international_value, weight=international_risk_weight)
+                CTNode.create_node(feature="international", description=f"Is international: {international_value}", value=international_value, weight=international_risk_weight)
             )
 
             # * Add lmic feature to both cost and risk
@@ -375,6 +381,24 @@ def transform_data_for_rac(
         cost_nodes.append(CTNode.create_node(feature=meta.id, description=description, value=value, weight=cost_weight))
         risk_nodes.append(CTNode.create_node(feature=meta.id, description=description, value=value, weight=risk_weight))
 
+        # Add other tertiles - we need to unify this later
+        if meta.id in ("duration", "recency", "num_sites", "num_visits"):
+            tertile_meta_id = meta.id + "_tertile"
+            risk_weight = mapped_weights.get_risk_by_name(name=tertile_meta_id)
+            if meta.id == "num_visits":
+                value = int(np.floor(value / 20))
+            tertile_number = max([value, 2])
+            score = risk_weight * tertile_number
+            risk_nodes.append(
+                CTNode(
+                    feature=tertile_meta_id,
+                    description=f"Tertile of {meta.id}",
+                    value=tertile_number,
+                    weight=risk_weight,
+                    score=score,
+                )
+            )
+
     # * Add constant node
     constant_cost_weight = mapped_weights.get_cost_by_name("constant")
     constant_risk_weight = mapped_weights.get_risk_by_name("constant")
@@ -393,8 +417,7 @@ def transform_data_for_rac(
 
     if condition_node is not None and phase_node is not None and sample_size_node is not None:
         trial_size: TrialSize = TrialSize.get_trial_size(
-            condition=condition_node, phase=phase_node, sample_size=int(sample_size_node),
-            sample_size_tertiles=mapped_weights.sample_size_tertiles
+            condition=condition_node, phase=phase_node, sample_size=int(sample_size_node), sample_size_tertiles=mapped_weights.sample_size_tertiles
         )
         trial_size_weight = mapped_weights.get_risk_by_name(name="sample_size_tertile", default=10)
         trial_size_tertile_number = trial_size.id
@@ -430,8 +453,7 @@ def calculate_lmic_condition_cost(lmic_condition_coefficient: WeightProfileBase,
     return total_cost
 
 
-def get_total_cost_or_risk_per_participant(ct_nodes: list[CTNode],
-                                           ignore_features: tuple[str, ...] = ()) -> int | float:
+def get_total_cost_or_risk_per_participant(ct_nodes: list[CTNode], ignore_features: tuple[str, ...] = ()) -> int | float:
     """
     Calculate the total cost per participant by summing the scores of CTNodes,
     excluding nodes with features listed in ignore_features
@@ -440,8 +462,7 @@ def get_total_cost_or_risk_per_participant(ct_nodes: list[CTNode],
     return sum(node.score for node in filtered_nodes)
 
 
-def get_total_trial_cost(ct_nodes: list[CTNode], module_weight: WeightProfile | UserWeightProfile) -> tuple[
-    float, float]:
+def get_total_trial_cost(ct_nodes: list[CTNode], module_weight: WeightProfile | UserWeightProfile) -> tuple[float, float]:
     """
     Calculate the total trial cost and total cost per participant.
     """
@@ -471,17 +492,23 @@ def get_total_trial_cost(ct_nodes: list[CTNode], module_weight: WeightProfile | 
 
 def get_trial_risk_score(ct_node: list[CTNode], module_weight: WeightProfile | UserWeightProfile) -> tuple[float, str]:
     """
-    Determine the trial risk score based on the total cost per participant
+    Determine the trial risk score based on the total cost per participant.
+
+    The total risk score is calculated using the `get_total_cost_or_risk_per_participant` function,
+    and it is clamped to ensure it falls within the range [0, 100]. Based on this clamped score,
+    the corresponding TrialRiskLevel ("Low", "Medium", or "High") is determined.
 
     Args:
-        ct_node (List[CTNode]): A list of CTNode instances
+        ct_node (List[CTNode]): A list of CTNode instances representing clinical trial nodes
 
     Returns:
-        str: The label of the corresponding TrialRiskLevel ("Low", "High", or "Medium")
+        str: The label of the corresponding TrialRiskLevel ("Low", "Medium", or "High")
     """
     total_risk_score = get_total_cost_or_risk_per_participant(ct_node)
     mapped_weights = WeightProfileBase(**module_weight.weights)
     risk_level = TrialRiskLevel.is_within_threshold(total_risk_score, mapped_weights.risk_thresholds)
+
+    total_risk_score = max(0, min(100, total_risk_score))
 
     # * If no specific thresholds are met, return MEDIUM
     return total_risk_score, risk_level.label

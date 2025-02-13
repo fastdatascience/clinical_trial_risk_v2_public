@@ -21,6 +21,9 @@ import CostRiskModelProfile from "../components/settings/InnerSettings/WeightPro
 import SampleSizeTertile from "../components/settings/InnerSettings/WeightProfile/SampleSizeTertile";
 import RiskThreshold from "../components/settings/InnerSettings/WeightProfile/RiskThreshold";
 import { FaThreads } from "react-icons/fa6";
+import MyAccount from "../components/settings/InnerSettings/MyAccount/MyAccount";
+import Security from "../components/settings/InnerSettings/Security/Security";
+import WeightProfile from "../components/settings/InnerSettings/WeightProfile/WeightProfiles";
 
 // constants
 export const FILES_PER_PAGE = 9;
@@ -104,6 +107,24 @@ export const weightTabItems: TabItem<unknown>[] = [
         id: 3,
         label: "Sample Size Tertiles",
         renderTabPanelComponent: () => <SampleSizeTertile />,
+    },
+];
+
+export const settingsItems: TabItem<unknown>[] = [
+    {
+        id: 1,
+        label: "My Profile",
+        renderTabPanelComponent: () => <MyAccount />,
+    },
+    {
+        id: 2,
+        label: "Security",
+        renderTabPanelComponent: () => <Security />,
+    },
+    {
+        id: 3,
+        label: "Weight Profile",
+        renderTabPanelComponent: () => <WeightProfile />,
     },
 ];
 
