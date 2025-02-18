@@ -9,8 +9,12 @@ services:
         command: hypercorn --config=hypercorn-docker.toml app.main:app
         ports:
             - "5000:5000"
+        volumes:
+            - storage:/tmp/storage
         env_file:
             - back_end/.env
+        environment:
+            PUBLIC_DOCKER: true
         depends_on:
             db:
                 condition: service_healthy
@@ -24,8 +28,8 @@ services:
     db:
         image: postgres:latest
         restart: always
-        expose:
-            - "5432"
+        ports:
+            - "5432:5432"
         volumes:
             - postgres_data:/var/lib/postgresql/data/
         environment:
@@ -39,7 +43,7 @@ services:
             test: [ "CMD-SHELL", "pg_isready", "-h", "db", "-d", "clinical_trials", "-U", "postgres" ]
             interval: 30s
             timeout: 10s
-            retries: 3
+            retries: 5
             start_period: 5s
 
     tika-grpc:
@@ -62,19 +66,21 @@ services:
             test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
             interval: 30s
             timeout: 10s
-            retries: 3
+            retries: 5
             start_period: 5s
 
     celery-worker:
         image: clinical-trials-api:latest
         pull_policy: never
         restart: always
-        command: celery -b "redis://redis:6379" -A app.ct_core worker --concurrency=10 -l info
+        command: celery -b "redis://redis:6379" -A app.ct_core worker --concurrency=5 -l info
+        volumes:
+            - storage:/tmp/storage
         healthcheck:
             test: [ "CMD-SHELL", "celery -b redis://redis:6379 inspect ping --destination celery@$$HOSTNAME" ]
             interval: 30s
             timeout: 10s
-            retries: 3
+            retries: 5
             start_period: 5s
         depends_on:
             redis:
@@ -85,6 +91,8 @@ services:
         pull_policy: never
         restart: always
         command: celery -b "redis://redis:6379" -A app.ct_core beat -l info -s /tmp/celerybeat-schedule
+        volumes:
+            - storage:/tmp/storage
         depends_on:
             redis:
                 condition: service_healthy
@@ -108,3 +116,4 @@ services:
 
 volumes:
     postgres_data:
+    storage:

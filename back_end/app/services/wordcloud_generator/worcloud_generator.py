@@ -14,8 +14,8 @@ from spacy.tokens import Doc
 from app import utils
 
 # Download stopwords before importing NLTK stopwords
-nltk.download("stopwords", download_dir="./nltk_data")
-nltk.data.path.append("./nltk_data")
+nltk.download("stopwords", download_dir="/tmp/nltk_data")
+nltk.data.path.append("/tmp/nltk_data")
 
 from nltk.corpus import stopwords
 

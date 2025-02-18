@@ -128,7 +128,7 @@ async def delete_user(
         included_annotated_documents=True,
     )
     all_files_to_delete = analysis_report_files_to_delete + document_files_to_delete
-    logger.info(f"Deleting all analysis report data and documents from storage by user {db_user.id}::{db_user.email}: {all_files_to_delete}")
+    logger.info(f"Deleting all analysis report data and documents from storage by user {db_user.id}::{db_user.email}.")
     storage_client.delete_files(file_names=all_files_to_delete)
 
     # Delete user record

@@ -277,7 +277,8 @@ You can find the new migration script under `migrations/versions`. You may edit 
 you added a new column that has `NOT NULL` to a table with existing rows, you should add a default value for the column
 in the script before applying the migration.
 
-The new migration script should be added to the version control.
+The new migration script should be added to the version control. The migration script will be applied to the database
+during the CI/CD process. You should only apply the migration manually on your local database.
 
 ### 1.2 Apply migration
 

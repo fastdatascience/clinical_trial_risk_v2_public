@@ -14,7 +14,7 @@ from fastapi.responses import Response, StreamingResponse
 from redis.asyncio import Redis as RedisAsync
 from sqlmodel import Session, col, func, select
 
-from app.config import BUCKET_OR_CONTAINER_NAME, CDN_BUCKET_OR_CONTAINER_BASE_PATH, MAX_DEMO_ACCOUNT_FILE_PROCESSING_COUNT
+from app.config import BUCKET_OR_CONTAINER_NAME, MAX_DEMO_ACCOUNT_FILE_PROCESSING_COUNT, STORAGE_PROVIDER
 from app.ct_core import init_document_process, map_document_parser_response_to_ct_document
 from app.database import paginate
 from app.grpc_client.document_parser import process_document
@@ -57,7 +57,7 @@ from app.services import PdfGenerator
 from app.services.pdf_generator.pdf_generator import PDF_GENERATOR_AVAILABLE, WKHTMLTOPDF_IO_ERROR_MESSAGE
 from app.services.storage_provider import StorageProvider
 from app.services.transform import get_total_trial_cost, get_trial_risk_score, transform_data_for_rac
-from app.utils import create_analysis_report_file_storage_key, remove_file_extension
+from app.utils import create_analysis_report_file_storage_key, remove_file_extension, create_document_file_storage_key
 
 router = APIRouter()
 
@@ -170,7 +170,6 @@ async def upload_document(
         return ServerResponse(error="No subscription found", status_code=403)
 
     _, subscription_type, subscription_attribute = user_subscription_result
-    user_resource_identifier = cast(User, session.query(User).where(col(User.id) == user.user.id).first()).user_resource_identifier
 
     if not demo_account:
         # * Check if daily processing cap is hit only for non guest accounts
@@ -206,7 +205,12 @@ async def upload_document(
     document_name = f"{file_uuid}_{document.filename.replace(' ', '_')}" if document.filename else str(file_uuid)
     logger.info(f"Uploading document for {user.user.id}::{user.user.email}. Document name {document_name}::{file_uuid}")
 
-    upload_path = f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/documents/{user_resource_identifier}/{document_name}"
+    db_user = cast(User, session.exec(select(User).where(User.id == user.user.id)).first())
+    upload_path = create_document_file_storage_key(
+        user_resource_identifier=db_user.user_resource_identifier,
+        filename=document_name,
+        storage_provider=STORAGE_PROVIDER,
+    )
 
     storage_client.put_file(file_name=upload_path, data=file_contents, content_type=document.content_type)
 
@@ -250,7 +254,7 @@ async def upload_document(
                 resource_url=upload_path,
                 user_id=user.user.id,
                 document_id=document_record.id,
-                user_resource_identifier=user_resource_identifier,
+                user_resource_identifier=db_user.user_resource_identifier,
             ).model_dump()
         )
 
@@ -479,7 +483,12 @@ async def get_a_document_object(
     if "::" not in decoded_signature:
         return ServerResponse(error="Invalid signature", status_code=400)
 
-    user_id, expiry_time_from_signature = decoded_signature.split("::")
+    decoded_signature_split = decoded_signature.split("::")
+    if len(decoded_signature_split) < 2:
+        return ServerResponse(error="Invalid signature", status_code=400)
+
+    user_id = int(decoded_signature_split[0])
+    expiry_time_from_signature = decoded_signature_split[1]
 
     try:
         expiry_time = int(expiry_time_from_signature)
@@ -497,9 +506,14 @@ async def get_a_document_object(
     if not document.template and document.user_id != user_id:
         return ServerResponse(error="Unauthorized access to the document", status_code=403)
 
-    user_resource_identifier = cast(User, session.exec(select(User).where(User.id == user_id)).first()).user_resource_identifier
+    db_user = cast(User, session.exec(select(User).where(User.id == user_id)).first())
 
-    file_content = storage_client.get_file(file_name=f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/documents/{user_resource_identifier}/{document.system_assigned_name}")
+    file_path = create_document_file_storage_key(
+        user_resource_identifier=db_user.user_resource_identifier,
+        filename=document.system_assigned_name,
+        storage_provider=STORAGE_PROVIDER,
+    )
+    file_content = storage_client.get_file(file_name=file_path)
     if file_content is None:
         return ServerResponse(error="File not found in storage", status_code=404)
 
@@ -602,8 +616,9 @@ async def export_run_result_to_pdf(
     if db_analysis_report:
         # Download analysis report data
         analysis_report_file_storage_key = create_analysis_report_file_storage_key(
-            user=db_user,
+            user_resource_identifier=db_user.user_resource_identifier,
             filename=db_analysis_report.system_assigned_name,
+            storage_provider=STORAGE_PROVIDER,
         )
         try:
             filebytes = storage_client.get_file(file_name=analysis_report_file_storage_key)
@@ -618,7 +633,12 @@ async def export_run_result_to_pdf(
     # If no analysis report data was found, create it here
     if not analysis_report_data:
         # Download document
-        document_bytes = storage_client.get_file(file_name=f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/documents/{db_user.user_resource_identifier}/{db_document.system_assigned_name}")
+        document_file_path = create_document_file_storage_key(
+            user_resource_identifier=db_user.user_resource_identifier,
+            filename=db_document.system_assigned_name,
+            storage_provider=STORAGE_PROVIDER,
+        )
+        document_bytes = storage_client.get_file(file_name=document_file_path)
 
         # Parse document
         parsed_document = process_document(file_contents=document_bytes)

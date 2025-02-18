@@ -1,9 +1,18 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { IoSearchOutline } from "react-icons/io5";
 import { Card, CardBody, Input, Typography } from "@material-tailwind/react";
-import { ISheetJsTableCell, ITableRow, ITableRowWithCellObj, Weights } from "../../utils/types";
+import {
+    ISheetJsTableCell,
+    ITableRow,
+    ITableRowWithCellObj,
+    Weights,
+} from "../../utils/types";
 import ExcelExport from "./ExcelExport";
-import { formatCurrency, generateDropdownOptions, isNumeric } from "../../utils/utils";
+import {
+    formatCurrency,
+    generateDropdownOptions,
+    isNumeric,
+} from "../../utils/utils";
 import { SelectInput } from "../common";
 import { useAtom } from "jotai";
 import {
@@ -18,7 +27,7 @@ const CalculationTable = ({
     columns,
     data,
     originalDocumentName,
-    condition
+    condition,
 }: {
     isCostTable: boolean;
     title: string;
@@ -50,12 +59,18 @@ const CalculationTable = ({
             setSampleSize(Number(sampleSizeRow?.value) ?? 1);
         }
     }, [data]);
-    
-    let excelExportColumns: string []
+
+    let excelExportColumns: string[];
     if (isCostTable) {
-        excelExportColumns = ["feature", "description", "value", "weight", "score"]
+        excelExportColumns = [
+            "feature",
+            "description",
+            "value",
+            "weight",
+            "score",
+        ];
     } else {
-        excelExportColumns = ["feature", "value", "weight", "score"]
+        excelExportColumns = ["feature", "value", "weight", "score"];
     }
 
     /**
@@ -68,40 +83,45 @@ const CalculationTable = ({
         const getValueAsNumber = (value: string | number | undefined) => {
             // Check if value is a number and if so return it
             if (typeof value === "number") {
-                return value as number;
-            } 
-            
+                return value;
+            }
+
             // Check if string is a number and if so return it as a number
             else if (typeof value === "string" && isNumeric(value)) {
                 return Number(value);
             }
-            
+
             // Return an empty string if value is not a number
             return "";
-        }
-        
+        };
 
         if (filteredData) {
             // Column letters
-            const valueColumnLetter = String.fromCharCode(excelExportColumns.indexOf("value") + "A".charCodeAt(0))
-            const weightColumnLetter = String.fromCharCode(excelExportColumns.indexOf("weight") + "A".charCodeAt(0))
-            const scoreColumnLetter = String.fromCharCode(excelExportColumns.indexOf("score") + "A".charCodeAt(0))
-            
+            const valueColumnLetter = String.fromCharCode(
+                excelExportColumns.indexOf("value") + "A".charCodeAt(0)
+            );
+            const weightColumnLetter = String.fromCharCode(
+                excelExportColumns.indexOf("weight") + "A".charCodeAt(0)
+            );
+            const scoreColumnLetter = String.fromCharCode(
+                excelExportColumns.indexOf("score") + "A".charCodeAt(0)
+            );
+
             // Export data
             const exportData: ITableRowWithCellObj[] = [];
-            
+
             // Data start row (row 1 is the header)
-            let dataStartRow = 2
+            let dataStartRow = 2;
 
             // Add row with filename
             if (originalDocumentName) {
                 exportData.push({
-                    feature: {t: "s", v: originalDocumentName},
-                    value: {t: "s", v: ""},
-                    weight: {t: "s", v: ""},
-                    score: {t: "s", v: "",},
+                    feature: { t: "s", v: originalDocumentName },
+                    value: { t: "s", v: "" },
+                    weight: { t: "s", v: "" },
+                    score: { t: "s", v: "" },
                 });
-                
+
                 dataStartRow += 1;
             }
 
@@ -109,46 +129,52 @@ const CalculationTable = ({
             if (condition) {
                 if (isCostTable) {
                     exportData.push({
-                        feature: {t: "s", v: "Trial is for condition"},
-                        description: {t: "s", v: condition},
-                        value: {t: "s", v: ""},
-                        weight: {t: "s", v: ""},
-                        score: {t: "s", v: "",},
+                        feature: { t: "s", v: "Trial is for condition" },
+                        description: { t: "s", v: condition },
+                        value: { t: "s", v: "" },
+                        weight: { t: "s", v: "" },
+                        score: { t: "s", v: "" },
                     });
                 } else {
                     exportData.push({
-                        feature: {t: "s", v: "Trial is for condition"},
-                        value: {t: "s", v: condition},
-                        weight: {t: "s", v: ""},
-                        score: {t: "s", v: "",},
+                        feature: { t: "s", v: "Trial is for condition" },
+                        value: { t: "s", v: condition },
+                        weight: { t: "s", v: "" },
+                        score: { t: "s", v: "" },
                     });
                 }
 
                 dataStartRow += 1;
             }
-            
+
             // Data rows
             for (let i = 0; i < filteredData.length; i++) {
                 const currentRow = i + dataStartRow;
 
-                const weightV = getValueAsNumber(filteredData[i].weight)
-                const weightT = typeof weightV === "number" ? "n" : "s"
+                const weightV = getValueAsNumber(filteredData[i].weight);
+                const weightT = typeof weightV === "number" ? "n" : "s";
 
-                const valueV = getValueAsNumber(filteredData[i].value)
-                const valueT = typeof valueV === "number" ? "n" : "s"
-                
-                let score: ISheetJsTableCell
+                const valueV = getValueAsNumber(filteredData[i].value);
+                const valueT = typeof valueV === "number" ? "n" : "s";
+
+                let score: ISheetJsTableCell;
                 if (typeof weightV === "number" && typeof valueV === "number") {
-                    score = {t: "n", v: filteredData[i].score, f: `${valueColumnLetter}${currentRow}*${weightColumnLetter}${currentRow}+RAND()*0`}
+                    score = {
+                        t: "n",
+                        v: filteredData[i].score,
+                        f: `${valueColumnLetter}${currentRow}*${weightColumnLetter}${currentRow}+RAND()*0`,
+                    };
                 } else {
-                    score = {t: "s", v: filteredData[i].score}
+                    score = { t: "s", v: filteredData[i].score };
                 }
 
                 exportData.push({
-                    feature: {t: "s", v: filteredData[i].feature},
-                    ...(isCostTable) && { description: {t: "s", v: filteredData[i].description} },
-                    value: {t: valueT, v: valueV},
-                    weight: {t: weightT, v: weightV},
+                    feature: { t: "s", v: filteredData[i].feature },
+                    ...(isCostTable && {
+                        description: { t: "s", v: filteredData[i].description },
+                    }),
+                    value: { t: valueT, v: valueV },
+                    weight: { t: weightT, v: weightV },
                     score: score,
                 });
             }
@@ -156,28 +182,51 @@ const CalculationTable = ({
             // Add total score row
             if (!isCostTable) {
                 exportData.push({
-                    feature: {t: "s", v: "Total score (50-100=low risk, 0-40=high risk)"},
-                    value: {t: "s", v: ""},
-                    weight: {t: "s", v: ""},
-                    score: {t: "n", v: 0, f: `MAX(0,MIN(100,SUM(${scoreColumnLetter}${dataStartRow}:${scoreColumnLetter}${exportData.length + 1})))+RAND()*0`},
+                    feature: {
+                        t: "s",
+                        v: "Total score (50-100=low risk, 0-40=high risk)",
+                    },
+                    value: { t: "s", v: "" },
+                    weight: { t: "s", v: "" },
+                    score: {
+                        t: "n",
+                        v: 0,
+                        f: `MAX(0,MIN(100,SUM(${scoreColumnLetter}${dataStartRow}:${scoreColumnLetter}${
+                            exportData.length + 1
+                        })))+RAND()*0`,
+                    },
                 });
             } else {
                 exportData.push({
-                    feature: {t: "s", v: "Total score"},
-                    description: {t: "s", v: ""},
-                    value: {t: "s", v: ""},
-                    weight: {t: "s", v: ""},
-                    score: {t: "n", v: 0, f: `SUM(${scoreColumnLetter}${dataStartRow}:${scoreColumnLetter}${exportData.length + 1})+RAND()*0`},
+                    feature: { t: "s", v: "Total score" },
+                    description: { t: "s", v: "" },
+                    value: { t: "s", v: "" },
+                    weight: { t: "s", v: "" },
+                    score: {
+                        t: "n",
+                        v: 0,
+                        f: `SUM(${scoreColumnLetter}${dataStartRow}:${scoreColumnLetter}${
+                            exportData.length + 1
+                        })+RAND()*0`,
+                    },
                 });
             }
 
             // Add risk level row
             if (!isCostTable) {
                 exportData.push({
-                    feature: {t: "s", v: "Risk level"},
-                    value: {t: "s", v: ""},
-                    weight: {t: "s", v: ""},
-                    score: {t: "n", v: 0, f: `IF(${scoreColumnLetter}${exportData.length + 1}<40,"HIGH",IF(${scoreColumnLetter}${exportData.length + 1}<50,"MEDIUM","LOW"))`},
+                    feature: { t: "s", v: "Risk level" },
+                    value: { t: "s", v: "" },
+                    weight: { t: "s", v: "" },
+                    score: {
+                        t: "n",
+                        v: 0,
+                        f: `IF(${scoreColumnLetter}${
+                            exportData.length + 1
+                        }<40,"HIGH",IF(${scoreColumnLetter}${
+                            exportData.length + 1
+                        }<50,"MEDIUM","LOW"))`,
+                    },
                 });
             }
 
@@ -185,7 +234,13 @@ const CalculationTable = ({
         } else {
             return [];
         }
-    }, [filteredData, isCostTable, excelExportColumns, originalDocumentName, condition]);
+    }, [
+        filteredData,
+        isCostTable,
+        excelExportColumns,
+        originalDocumentName,
+        condition,
+    ]);
 
     /* 
     this function handle weight change and calculates score 
@@ -245,10 +300,10 @@ const CalculationTable = ({
 
         const filteredData = searchQuery
             ? tableData?.filter((row) =>
-                row.feature
-                    .toLowerCase()
-                    .includes(event.target?.value?.toLowerCase())
-            )
+                  row.feature
+                      .toLowerCase()
+                      .includes(event.target?.value?.toLowerCase())
+              )
             : tableData;
 
         // Update table data with filtered data
@@ -288,7 +343,11 @@ const CalculationTable = ({
                     <ExcelExport
                         data={excelExportData}
                         header={excelExportColumns}
-                        fileName={isCostTable ? "cost_calculation" : "risk_calculation"}
+                        fileName={
+                            isCostTable
+                                ? "cost_calculation"
+                                : "risk_calculation"
+                        }
                     />
                 </div>
 
@@ -314,7 +373,7 @@ const CalculationTable = ({
                             value={
                                 selectedProfile ||
                                 weightProfiles?.find(
-                                    (profile) => profile.default
+                                    (profile) => !profile.default
                                 )?.name
                             }
                             placeholder={"Select weight profile..."}

@@ -97,3 +97,6 @@ WKHTMLTOPDF_PATH = os.getenv("WKHTMLTOPDF_PATH", "/usr/bin/wkhtmltopdf")
 
 # * DNS for the current server
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:5000")
+
+# * If the application is running with the public docker release
+PUBLIC_DOCKER = os.getenv("PUBLIC_DOCKER", "false").lower() == "true"

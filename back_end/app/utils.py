@@ -11,6 +11,7 @@ from sqlmodel import SQLModel
 
 from app.config import CDN_BUCKET_OR_CONTAINER_BASE_PATH
 from app.models.user.base import User
+from app.types import TSTORAGE_PROVIDER
 
 T = TypeVar("T")
 
@@ -172,40 +173,58 @@ def pretty_print_countries(countries: list[str], show_flags: bool = False) -> st
     return human_readable_prediction
 
 
-def create_analysis_report_file_storage_key(user: User, filename: str) -> str:
+def create_analysis_report_file_storage_key(
+    user_resource_identifier: str,
+    filename: str,
+    storage_provider: TSTORAGE_PROVIDER
+) -> str:
     """
     Create analysis report file storage key.
 
-    :param user: The user.
+    :param user_resource_identifier: The user resource identifier.
     :param filename: The filename.
+    :param storage_provider: The storage provider.
     """
 
-    if not is_valid_uuid(user.user_resource_identifier):
-        raise Exception(f"Invalid user_resource_identifier received for user {user.id}::{user.email}.")
+    if not is_valid_uuid(user_resource_identifier):
+        raise Exception(f"Invalid user_resource_identifier received: {user_resource_identifier}.")
 
     filename = filename.strip()
     if not is_valid_filename(filename):
-        raise Exception(f"Invalid filename received for user {user.id}::{user.email}.")
+        raise Exception(f"Invalid filename received: {filename}.")
 
-    return f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/analysis-report-data/{user.user_resource_identifier}/{filename}"
+    analysis_report_data = "analysis-report-data"
+    if storage_provider == "local":
+        return f"{analysis_report_data}/{user_resource_identifier}/{filename}"
+    else:
+        return f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/{analysis_report_data}/{user_resource_identifier}/{filename}"
 
 
-def create_document_file_storage_key(user: User, filename: str) -> str:
+def create_document_file_storage_key(
+    user_resource_identifier: str,
+    filename: str,
+    storage_provider: TSTORAGE_PROVIDER
+) -> str:
     """
     Create document file storage key.
 
-    :param user: The user.
+    :param user_resource_identifier: The user resource identifier.
     :param filename: The filename.
+    :param storage_provider: The storage provider.
     """
 
-    if not is_valid_uuid(user.user_resource_identifier):
-        raise Exception(f"Invalid user_resource_identifier received for user {user.id}::{user.email}.")
+    if not is_valid_uuid(user_resource_identifier):
+        raise Exception(f"Invalid user_resource_identifier received: {user_resource_identifier}.")
 
     filename = filename.strip()
     if not is_valid_filename(filename):
-        raise Exception(f"Invalid filename received for user {user.id}::{user.email}.")
+        raise Exception(f"Invalid filename received: {filename}.")
 
-    return f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/documents/{user.user_resource_identifier}/{filename}"
+    documents = "documents"
+    if storage_provider == "local":
+        return f"{documents}/{user_resource_identifier}/{filename}"
+    else:
+        return f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/{documents}/{user_resource_identifier}/{filename}"
 
 
 def split_list_into_chunks(l: list[T], n: int) -> list[list[T]]:

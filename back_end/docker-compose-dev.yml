@@ -3,8 +3,7 @@ services:
         command: hypercorn --bind 0.0.0.0:5000 --reload app.main:app # --reload does not include reloading the Celery worker
         volumes:
             - .:/app
-        environment:
-            STAGE: dev
+            - storage:/tmp/storage
 
     celery-worker:
         command: celery -b "redis://redis:6379" -A app.ct_core worker --concurrency=1 -l info

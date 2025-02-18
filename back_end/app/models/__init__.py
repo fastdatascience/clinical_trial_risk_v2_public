@@ -27,3 +27,4 @@ from app.models.user.user_subscription import UserSubscription
 from app.models.weight_profile.base import DocumentRunWeightProfile
 from app.models.weight_profile.base import UserWeightProfile
 from app.models.weight_profile.base import WeightProfile
+from app.models.settings.settings import Settings

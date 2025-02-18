@@ -3,7 +3,9 @@ services:
         command: hypercorn --bind 0.0.0.0:5000 --reload app.main:app # --reload does not include reloading the Celery worker
         volumes:
             - ./back_end:/app
+            - storage:/tmp/storage
         environment:
+            PUBLIC_DOCKER: true
             STAGE: dev
 
     celery-worker:
