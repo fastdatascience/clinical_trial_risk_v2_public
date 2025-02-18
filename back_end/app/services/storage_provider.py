@@ -2,7 +2,7 @@ import os
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 import boto3
 from azure.core.paging import ItemPaged
@@ -14,11 +14,12 @@ from mypy_boto3_s3 import S3Client
 from app import config
 from app.log_config import logger
 from app.security import encode_sha256
+from app.types import TSTORAGE_PROVIDER
 from app.utils import split_list_into_chunks
 
 
 class LocalStorage:
-    def __init__(self, base_path="/tmp"):
+    def __init__(self, base_path="/tmp/storage"):
         """
         In standalone mode or dockerized environments, ensure proper volume mounting to persist data outside containers if using paths like /tmp3
         """
@@ -67,13 +68,15 @@ class StorageProvider:
     __storage_client: BaseClient | BlobServiceClient | LocalStorage
 
     def __init__(self):
-        self.provider: Literal["s3"] | Literal["azure"] | Literal["local"] = config.STORAGE_PROVIDER
+        self.provider: TSTORAGE_PROVIDER = config.STORAGE_PROVIDER
 
         match self.provider:
             case "s3":
                 self.__setup_s3()
             case "azure":
                 self.__setup_azure()
+            case "local":
+                self.__setup_localstorage()
 
     def __setup_s3(self):
         aws_access_key = os.environ.get("AWS_ACCESS_KEY")

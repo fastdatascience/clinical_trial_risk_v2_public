@@ -209,7 +209,9 @@ def init_document_process(document_dict: dict):
         logger.info(f"Annotating document {document.document_id}::{document.user_id}")
 
         # * Annotate pdf and save it to storage
-        annotated_pdf = CTDocument.add_document_highlights(pdf_buffer=file_contents, document=ct_document)
+        annotated_pdf = None
+        if hasattr(CTDocument, 'add_document_highlights') and callable(CTDocument.add_document_highlights):
+            annotated_pdf = CTDocument.add_document_highlights(pdf_buffer=file_contents, document=ct_document)
 
         if annotated_pdf is not None:
             modified_resource_url = f"{remove_file_extension(document.resource_url)}_annotated.{get_file_extension(document.resource_url)}"

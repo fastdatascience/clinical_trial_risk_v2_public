@@ -7,7 +7,7 @@ from uuid import uuid4
 from spacy.tokens import Doc as SpacyDoc
 from sqlmodel import Session, select
 
-from app import services, models, utils, schemas
+from app import services, models, utils, schemas, config
 from app.log_config import logger
 from app.models import AnalysisReport
 from app.models.document.document import Document
@@ -69,8 +69,9 @@ def create_analysis_report_data_and_upload_to_storage(
     system_assigned_name = f"{uuid4()}_analysis_report.json"
     analysis_report_data_bytes = json.dumps(analysis_report_data_dict).encode("utf-8")
     analysis_report_file_storage_key = utils.create_analysis_report_file_storage_key(
-        user=db_user,
+        user_resource_identifier=db_user.user_resource_identifier,
         filename=system_assigned_name,
+        storage_provider=config.STORAGE_PROVIDER,
     )
     storage_client.put_file(
         file_name=analysis_report_file_storage_key,
@@ -167,8 +168,9 @@ def get_user_analysis_report_data_storage_keys(
 
     file_names = [
         create_analysis_report_file_storage_key(
-            user=user,
+            user_resource_identifier=user.user_resource_identifier,
             filename=x.system_assigned_name,
+            storage_provider=config.STORAGE_PROVIDER,
         )
         for x in db_analysis_reports
     ]
@@ -209,8 +211,9 @@ def get_user_documents_storage_keys(
         # Append the document file names
         file_names.append(
             create_document_file_storage_key(
-                user=user,
+                user_resource_identifier=user.user_resource_identifier,
                 filename=db_document.system_assigned_name,
+                storage_provider=config.STORAGE_PROVIDER,
             )
         )
 
@@ -220,8 +223,9 @@ def get_user_documents_storage_keys(
             file_extension = get_file_extension(db_document.system_assigned_name)
             file_names.append(
                 create_document_file_storage_key(
-                    user=user,
+                    user_resource_identifier=user.user_resource_identifier,
                     filename=f"{file_no_ext}_annotated.{file_extension}",
+                    storage_provider=config.STORAGE_PROVIDER,
                 )
             )
 

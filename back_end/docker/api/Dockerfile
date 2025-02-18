@@ -45,6 +45,10 @@ FROM python:3.11-slim AS final
 # Install wkhtmltopdf
 RUN apt-get update && apt-get install -y wkhtmltopdf
 
+# Create storage dir for local storage
+RUN mkdir -p /tmp/storage
+RUN chown -R nobody:nogroup /tmp/storage
+
 # Set user
 USER nobody
 

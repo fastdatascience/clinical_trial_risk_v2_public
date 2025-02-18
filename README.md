@@ -32,10 +32,17 @@ git clone https://github.com/fastdatascience/clinical_trial_risk_v2_public
 
 ### 2. Environment variables
 
+#### 2.1 Copy .env files
+
 * Copy the file `/back_end/.env.example-docker` to `/back_end/.env`
 * Copy the file `/front_end/.env.example-docker` to `/front_end/.env`
 
-You may update the environment variables if needed.
+#### 2.2 Default user for login
+
+A new user will be created when you run the application for the first time only.
+The email for this user is `publicdocker@fastdatascience.com`.
+You can find the password at `/back_end/.env`, look for the env `PUBLIC_DOCKER_USER_PASSWORD` and change the default
+password set if needed.
 
 ### 3. Containers
 
@@ -55,7 +62,3 @@ The command below still stop all running containers.
 ```bash
 docker compose stop
 ```
-
-## Login
-
-TODO: Default user account for login
