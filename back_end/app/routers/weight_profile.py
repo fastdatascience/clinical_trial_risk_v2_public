@@ -32,7 +32,7 @@ def transform_weights_by_weight_type(data: WeightProfile, weight_type: WeightTyp
 @router.get(path="")
 async def get_default_weight_profiles(
     weight_type: WeightTypeEnum | None = Depends(get_weight_type),
-    _: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER])),
+    _: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER, RoleEnum.GUEST])),
     session: Session = Depends(get_db),
     page: int = 1,
     page_size: int = 20,
@@ -48,7 +48,7 @@ async def get_default_weight_profiles(
 @router.get(path="/users")
 async def get_user_weight_profiles(
     weight_type: WeightTypeEnum | None = Depends(get_weight_type),
-    user: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER])),
+    user: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER, RoleEnum.GUEST])),
     session: Session = Depends(get_db),
     page: int = 1,
     page_size: int = 20,

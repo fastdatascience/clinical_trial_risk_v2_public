@@ -1,6 +1,9 @@
 services:
     api:
-        command: hypercorn --bind 0.0.0.0:5000 --reload app.main:app # --reload does not include reloading the Celery worker
+        command: bash -c "
+            source /tmp/envfile
+            && hypercorn --bind 0.0.0.0:5000 --reload app.main:app
+            "
         volumes:
             - .:/app
             - storage:/tmp/storage

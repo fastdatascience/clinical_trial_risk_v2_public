@@ -5,7 +5,7 @@ nlp = spacy.blank("en")
 # todo change the key to have nested model definitions
 CLASSIFIER_BIN = {
     "phase": "https://fastdatascience.z33.web.core.windows.net/clinical/phase.zip",
-    "condition": "https://fastdatascience.z33.web.core.windows.net/clinical/condition_classifier_small.pkl.bz2",
+    "condition": "https://fastdatascience.z33.web.core.windows.net/clinical/condition_classifier.pkl.bz2",
     "vaccine": "https://fastdatascience.z33.web.core.windows.net/clinical/vaccine_classifier.pkl.bz2",
     "intervention_type": "https://fastdatascience.z33.web.core.windows.net/clinical/intervention_classifier.pkl.bz2",
     "country": "https://fastdatascience.z33.web.core.windows.net/clinical/country.zip",

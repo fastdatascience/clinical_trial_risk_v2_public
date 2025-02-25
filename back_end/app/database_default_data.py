@@ -2,8 +2,10 @@
 Functions to insert default data into the database.
 """
 
+import sys
 import json
 import os
+import csv
 from decimal import Decimal
 from typing import Callable
 from datetime import UTC, datetime
@@ -24,6 +26,8 @@ from app.models import (
     Settings,
     UserSubscription,
     UserRole,
+    Document,
+    UserResourceUsage,
 )
 from app.models.subscription.subscription_type import (
     SubscriptionDuration,
@@ -34,6 +38,8 @@ from app.models.user.role import RoleEnum
 from app.models.user.user_resource_usage import ResourceTypeName
 from app.models.weight_profile.base import WeightProfile
 from app import config
+
+csv.field_size_limit(sys.maxsize)
 
 
 def db_create_all_extensions() -> None:
@@ -541,7 +547,7 @@ def db_insert_default_public_docker_user() -> None:
             return
 
         public_docker_user_email = "publicdocker@fastdatascience.com"
-        public_docker_user_password = os.getenv("PUBLIC_DOCKER_USER_PASSWORD")
+        public_docker_user_password = config.PUBLIC_DOCKER_USER_PASSWORD
         public_docker_user_first_name = "Public"
         public_docker_user_last_name = "Docker"
 
@@ -603,7 +609,7 @@ def db_insert_demo_user() -> None:
     """
 
     with SessionLocal() as session:
-        demo_user_email = os.getenv("DEMO_ACCOUNT_EMAIL")
+        demo_user_email = config.DEMO_ACCOUNT_EMAIL
         demo_user_password = ""
         demo_user_first_name = "Guest"
         demo_user_last_name = "G."
@@ -619,6 +625,13 @@ def db_insert_demo_user() -> None:
             is not None
         )
         if not exists:
+            documents_csv_filepath = "/tmp/demo_user_data/csv/documents.csv"
+            user_resource_usages_csv_filepath = "/tmp/demo_user_data/csv/user_resource_usages.csv"
+            if not os.path.isfile(documents_csv_filepath) or not os.path.isfile(user_resource_usages_csv_filepath):
+                logger.warning("Please download the demo user data with the cli.")
+
+                return
+
             logger.info(
                 f"Inserting demo user into table {User.__tablename__}..."
             )
@@ -629,8 +642,10 @@ def db_insert_demo_user() -> None:
                 password=demo_user_password,
                 first_name=demo_user_first_name,
                 last_name=demo_user_last_name,
+                user_resource_identifier=os.getenv("INIT_DEMO_USER_USER_RESOURCE_IDENTIFIER"),
                 is_email_verified=True,
                 terms_and_privacy_accepted=True,
+                profile_picture="https://www.kindpng.com/picc/m/722-7221920_placeholder-profile-image-placeholder-png-transparent-png.png"
             )
             session.add(user)
             session.commit()
@@ -644,6 +659,108 @@ def db_insert_demo_user() -> None:
             session.add(user_role)
 
             session.commit()
+
+            # Insert demo user documents
+            __db_insert_demo_user_documents(
+                demo_user=user,
+                documents_csv_filepath=documents_csv_filepath,
+                user_resource_usages_csv_filepath=user_resource_usages_csv_filepath
+            )
+
+
+def __db_insert_demo_user_documents(
+    demo_user: User,
+    documents_csv_filepath: str,
+    user_resource_usages_csv_filepath
+) -> None:
+    """
+    Insert demo user documents into table documents (if data isn't found in the table).
+    """
+
+    with SessionLocal() as session:
+        info_logged = False
+
+        with open(documents_csv_filepath) as file:
+            documents_reader = csv.DictReader(file)
+            document_objs = [x for x in documents_reader]
+        with open(user_resource_usages_csv_filepath) as file:
+            user_resource_usages_reader = csv.DictReader(file)
+            user_resource_usage_objs = [x for x in user_resource_usages_reader]
+
+        # Add documents
+        for document_obj in document_objs:
+            # Insert record if it doesn't exist - Check by original_document_name
+            exists: bool = (
+                session.query(Document.id).filter_by(
+                    original_document_name=document_obj["original_document_name"]
+                ).first() is not None
+            )
+            if not exists:
+                if not info_logged:
+                    logger.info(
+                        f"Inserting demo user data into table {Document.__tablename__} and table {UserResourceUsage.__tablename__}..."
+                    )
+                    info_logged = True
+
+                document = Document(
+                    original_document_name=document_obj["original_document_name"],
+                    system_assigned_name=document_obj["system_assigned_name"],
+                    document_type=document_obj["document_type"],
+                    document_size=int(document_obj["document_size"]),
+                    user_id=demo_user.id,
+                    template=True,
+                )
+                session.add(document)
+                session.commit()
+                session.refresh(document)
+
+                # Insert user resource usage for the document
+                res_find_user_resource_usage = [
+                    x for x in user_resource_usage_objs if
+                    x["resource_id"] == document_obj["id"]
+                ]
+                if len(res_find_user_resource_usage) > 0:
+                    __db_insert_demo_user_user_resource_usage(
+                        session=session,
+                        user_id=demo_user.id,
+                        document_id=document.id,
+                        user_resource_usage_dict=res_find_user_resource_usage[0],
+                    )
+
+
+def __db_insert_demo_user_user_resource_usage(
+    session: SessionLocal,
+    user_id: int,
+    document_id: int,
+    user_resource_usage_dict: dict
+) -> None:
+    """
+    Insert demo user user resource usage.
+    """
+
+    # Insert record if it doesn't exist - Check by resource_id
+    exists: bool = (
+        session.query(UserResourceUsage.id).filter_by(
+            resource_id=document_id
+        ).first() is not None
+    )
+    if not exists:
+        res_db_resource_type_file_process: tuple[ResourceType] = session.query(ResourceType.id).filter_by(
+            name=ResourceTypeName.FILE_PROCESS.value
+        )
+
+        user_resource_usage = UserResourceUsage(
+            user_id=user_id,
+            resource_type_id=res_db_resource_type_file_process[0].id,
+            start_time=user_resource_usage_dict["start_time"],
+            end_time=user_resource_usage_dict["end_time"],
+            resource_id=document_id,
+            status=user_resource_usage_dict["status"],
+            result=json.loads(user_resource_usage_dict["result"]),
+        )
+
+        session.add(user_resource_usage)
+        session.commit()
 
 
 def get_module_names_list_for_db_insert() -> list[str]:

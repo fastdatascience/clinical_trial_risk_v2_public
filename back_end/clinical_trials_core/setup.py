@@ -38,7 +38,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://fastdatascience.com",
-    version="1.1.6",
+    version="1.2.1",
     maintainer="Abdullah Waqar, Thomas Wood",
     maintainer_email="abdullahwaqar@pm.me, thomas@fastdatascience.com",
     project_urls={

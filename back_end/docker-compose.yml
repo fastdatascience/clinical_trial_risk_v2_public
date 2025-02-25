@@ -6,7 +6,10 @@ services:
         image: clinical-trials-api-private:latest
         pull_policy: never
         restart: always
-        command: hypercorn --config=hypercorn-docker.toml app.main:app
+        command: bash -c "
+            source /tmp/envfile
+            && hypercorn --config=hypercorn-docker.toml app.main:app
+            "
         ports:
             - "5000:5000"
         volumes:

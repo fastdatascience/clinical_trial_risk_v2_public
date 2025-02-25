@@ -1,7 +1,5 @@
 import json
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any
 
 from clinicaltrials.core import BaseProcessor, ClassifierConfig, Document, Metadata, MetadataOption, Page
 from clinicaltrials.country.country_ensemble_extractor import CountryEnsembleExtractor
@@ -10,7 +8,7 @@ from clinicaltrials.country.country_group_extractor import CountryGroupExtractor
 from clinicaltrials.country.international_extractor_naive_bayes import InternationalExtractorNaiveBayes
 from clinicaltrials.country.international_extractor_spacy import InternationalExtractorSpacy
 from clinicaltrials.logs_collector import LogsCollector
-from clinicaltrials.model_store import get_models
+from clinicaltrials import model_store
 
 country_extractor_rule_based = CountryExtractorRuleBased()
 
@@ -285,12 +283,12 @@ class Country(BaseProcessor):
 
     def process(self, document: Document, config: ClassifierConfig | None = None):
         logs_collector = LogsCollector()
-        models = get_models()
+        models = model_store.get_models()
 
-        country_group_extractor = models["country_group_extractor"]
-        international_extractor = models["international_extractor"]
-        international_extractor_nb = models["international_extractor_nb"]
-        country_ensemble_extractor = models["country_ensemble_extractor"]
+        country_group_extractor = models.country_group_extractor
+        international_extractor = models.international_extractor
+        international_extractor_nb = models.international_extractor_nb
+        country_ensemble_extractor = models.country_ensemble_extractor
 
         docs = document.tokenised_pages
 

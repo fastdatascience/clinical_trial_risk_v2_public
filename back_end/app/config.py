@@ -21,7 +21,7 @@ LOG_LEVEL = logging.INFO if ENV == "production" else logging.DEBUG
 os.environ["LOGURU_LEVEL"] = os.getenv("LOG_LEVEL") or (DEBUG and "DEBUG") or "INFO"
 os.environ["LOGURU_DEBUG_COLOR"] = "<fg #777>"
 
-__SERVER_VERSION = "1.3.0"
+__SERVER_VERSION = "1.4.0"
 
 # * Redis config
 REDIS_HOST = os.getenv("REDIS_HOST")
@@ -100,3 +100,4 @@ SERVER_URL = os.getenv("SERVER_URL", "http://localhost:5000")
 
 # * If the application is running with the public docker release
 PUBLIC_DOCKER = os.getenv("PUBLIC_DOCKER", "false").lower() == "true"
+PUBLIC_DOCKER_USER_PASSWORD = os.getenv("PUBLIC_DOCKER_USER_PASSWORD")

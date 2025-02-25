@@ -9,7 +9,7 @@ Usage:
     result = ct.run_all(document=parsed_document, parallel=True, file_buffer=file_contents)
 """
 
-__version__ = "1.1.6"
+__version__ = "1.2.1"
 
 import argparse
 import inspect
@@ -31,9 +31,9 @@ from pypdf import PdfReader, PdfWriter
 from pypdf.annotations import Highlight
 from spacy.tokens import Doc
 
-from clinicaltrials.utils import get_default_classifier_storage_path
 from clinicaltrials.resources import CLASSIFIER_BIN
 from clinicaltrials.resources import nlp as spacy_nlp
+from clinicaltrials.utils import get_default_classifier_storage_path
 
 
 def __get_logger(log_level=logging.DEBUG, log_to_file=False, log_file="logfile.log"):
