@@ -205,47 +205,70 @@ class NumSites(BaseProcessor):
                     occurrence_to_pages[match_text_norm] = []
                 occurrence_to_pages[match_text_norm].append(page_no)
 
+        confidence = 0
         if len(candidates) > 0:
             candidates = sorted(candidates, key=lambda x: x[2], reverse=True)
             prediction = candidates[0][1]
+            confidence = 0.6
         else:
             # Linear regression model pretrained
             if num_mentions_single_site == 0 and num_mentions_single_site == 0 and num_phone_numbers == 0:
                 prediction = 1
+                confidence = 0.1
             else:
                 prediction = int(np.round(
                     1.81194943 + 2.0255376 * num_mentions_multi_site + -0.31408328 * num_mentions_single_site + 0.04524224 * num_phone_numbers))
-        return {"prediction": prediction, "num_mentions_multi_site": num_mentions_multi_site,
+                confidence = 0.2
+        return {"prediction": prediction, "confidence": confidence, "num_mentions_multi_site": num_mentions_multi_site,
                 "num_mentions_single_site": num_mentions_single_site, "candidates": candidates,
                 "num_phone_numbers": num_phone_numbers, "annotations": annotations, "pages": occurrence_to_pages}
 
 
+#
+#
+# if __name__ == "__main__":
+#     d = NumSites()
+#     # document = Document(
+#     #     pages=[Page(content="between 100 - 200 sites will participate in this glob", page_number=1)])
+#     # d_result = d.process(document=document)
+#     # print(d_result)
+#
+#     import os
+#     import pickle as pkl
+#
+#     folder = "/home/thomas/protocols_random_to_test/"
+#
+#     for file in os.listdir(folder):
+#         # if "MAT-V-2018-R-M.pdf.pkl" not in file:
+#         #     continue
+#         #     if file not in annotations:
+#         #         continue
+#         # if file in annotations:
+#         #     continue
+#         if file.endswith("pkl"):
+#             print(file)
+#             full_file = folder + "/" + file
+#             with open(full_file, "rb") as f:
+#                 pages = pkl.load(f)
+#             document = Document(pages=[
+#                 Page(content=p, page_number=page_no) for page_no, p in enumerate(pages)])
+#
+#             d_result = d.process(document=document)
+#             print(json.dumps(d_result, indent=4))
+#
+#
+
+
 if __name__ == "__main__":
     d = NumSites()
-    # document = Document(
-    #     pages=[Page(content="between 100 - 200 sites will participate in this glob", page_number=1)])
-    # d_result = d.process(document=document)
-    # print(d_result)
-
-    import os
     import pickle as pkl
 
-    folder = "/home/thomas/protocols_random_to_test/"
-
-    for file in os.listdir(folder):
-        # if "MAT-V-2018-R-M.pdf.pkl" not in file:
-        #     continue
-        #     if file not in annotations:
-        #         continue
-        # if file in annotations:
-        #     continue
-        if file.endswith("pkl"):
-            print(file)
-            full_file = folder + "/" + file
-            with open(full_file, "rb") as f:
-                pages = pkl.load(f)
-            document = Document(pages=[
-                Page(content=p, page_number=page_no) for page_no, p in enumerate(pages)])
-
-            d_result = d.process(document=document)
-            print(json.dumps(d_result, indent=4))
+    with open("/home/thomas/clinical_trials/data/ctgov/preprocessed_tika/47_NCT02946047_Prot_SAP_000.pdf.pkl",
+              "rb") as f:
+        pages = pkl.load(f)
+    document = Document(
+        pages=[Page(
+            content=p,
+            page_number=i) for i, p in enumerate(pages)])
+    d_result = d.process(document=document)
+    print(json.dumps(d_result, indent=4))

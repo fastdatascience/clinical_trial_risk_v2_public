@@ -1,17 +1,17 @@
 import base64
 import random
 import uuid
+from io import BytesIO
 from pathlib import Path
 from typing import Any, TypeVar
 from urllib.parse import urlparse, urlunparse
 
 import pycountry
+from pdfplumber import open as pdfplumber_open
 from sqlalchemy.orm import InstanceState
 from sqlmodel import SQLModel
 
 from app.config import CDN_BUCKET_OR_CONTAINER_BASE_PATH
-from app.models.user.base import User
-from app.types import TSTORAGE_PROVIDER
 
 T = TypeVar("T")
 
@@ -19,7 +19,7 @@ T = TypeVar("T")
 def generate_otp(length: int = 6) -> str:
     """Generate a numeric OTP of specified length."""
     # * Generate a random integer between 10^(length-1) and (10^length) - 1
-    return str(random.randint(10 ** (length - 1), (10 ** length) - 1))
+    return str(random.randint(10 ** (length - 1), (10**length) - 1))
 
 
 def mask_email(email, num_chars_to_keep_username=3, num_chars_to_keep_domain_end=3):
@@ -165,9 +165,7 @@ def pretty_print_countries(countries: list[str], show_flags: bool = False) -> st
             human_readable_prediction += "one or more unspecified countries"
         else:
             if show_flags:
-                human_readable_prediction += pycountry.countries.get(
-                    alpha_2=country_code
-                ).flag
+                human_readable_prediction += pycountry.countries.get(alpha_2=country_code).flag
             human_readable_prediction += pycountry.countries.get(alpha_2=country_code).name
 
     return human_readable_prediction
@@ -176,14 +174,12 @@ def pretty_print_countries(countries: list[str], show_flags: bool = False) -> st
 def create_analysis_report_file_storage_key(
     user_resource_identifier: str,
     filename: str,
-    storage_provider: TSTORAGE_PROVIDER
 ) -> str:
     """
     Create analysis report file storage key.
 
     :param user_resource_identifier: The user resource identifier.
     :param filename: The filename.
-    :param storage_provider: The storage provider.
     """
 
     if not is_valid_uuid(user_resource_identifier):
@@ -193,24 +189,18 @@ def create_analysis_report_file_storage_key(
     if not is_valid_filename(filename):
         raise Exception(f"Invalid filename received: {filename}.")
 
-    analysis_report_data = "analysis-report-data"
-    if storage_provider == "local":
-        return f"{analysis_report_data}/{user_resource_identifier}/{filename}"
-    else:
-        return f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/{analysis_report_data}/{user_resource_identifier}/{filename}"
+    return f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/analysis-report-data/{user_resource_identifier}/{filename}"
 
 
 def create_document_file_storage_key(
     user_resource_identifier: str,
     filename: str,
-    storage_provider: TSTORAGE_PROVIDER
 ) -> str:
     """
     Create document file storage key.
 
     :param user_resource_identifier: The user resource identifier.
     :param filename: The filename.
-    :param storage_provider: The storage provider.
     """
 
     if not is_valid_uuid(user_resource_identifier):
@@ -220,11 +210,7 @@ def create_document_file_storage_key(
     if not is_valid_filename(filename):
         raise Exception(f"Invalid filename received: {filename}.")
 
-    documents = "documents"
-    if storage_provider == "local":
-        return f"{documents}/{user_resource_identifier}/{filename}"
-    else:
-        return f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/{documents}/{user_resource_identifier}/{filename}"
+    return f"{CDN_BUCKET_OR_CONTAINER_BASE_PATH}/documents/{user_resource_identifier}/{filename}"
 
 
 def split_list_into_chunks(l: list[T], n: int) -> list[list[T]]:
@@ -235,7 +221,7 @@ def split_list_into_chunks(l: list[T], n: int) -> list[list[T]]:
     :param n: Size per chunk.
     """
 
-    return [l[i:i + n] for i in range(0, len(l), n)]
+    return [l[i : i + n] for i in range(0, len(l), n)]
 
 
 def is_valid_uuid(value: str) -> bool:
@@ -269,3 +255,25 @@ def is_valid_filename(value: str) -> bool:
             return False
 
     return True
+
+
+def get_number_of_pages_from_pdf(file_contents: bytes) -> int:
+    pdf_file = BytesIO(file_contents)
+    with pdfplumber_open(pdf_file) as pdf:
+        return len(pdf.pages)
+
+
+def calculate_processing_time_limit(num_pages: int, base_time: int = 300, time_per_page: int = 3) -> int:
+    """
+    Calculate the time limit for document processing.
+
+    Args:
+        num_pages (int): Number of pages in the document
+        base_time (int): Base time in seconds (default 5 minutes)
+        time_per_page (int): Additional time per page in seconds (default 3 seconds)
+
+    Returns:
+    int: Calculated time limit in seconds
+    """
+    # * Cap at 1 hour
+    return min(base_time + (num_pages * time_per_page), 3600)

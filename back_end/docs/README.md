@@ -124,3 +124,12 @@ set to the base directory of this repo.
 
 ![./pycharm-runconfig.png](./pycharm-runconfig.png)
 
+
+## Restarting the server
+
+If the server becomes unresponsive or the queues get jammed, you can SSH into the server and restart everything:
+
+```
+ssh azureuser@ct-api-prod.fastdatascience.com
+pm2 restart all
+```

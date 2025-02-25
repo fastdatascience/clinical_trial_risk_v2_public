@@ -210,7 +210,7 @@ def init_document_process(document_dict: dict):
 
         # * Annotate pdf and save it to storage
         annotated_pdf = None
-        if hasattr(CTDocument, 'add_document_highlights') and callable(CTDocument.add_document_highlights):
+        if hasattr(CTDocument, "add_document_highlights") and callable(CTDocument.add_document_highlights):
             annotated_pdf = CTDocument.add_document_highlights(pdf_buffer=file_contents, document=ct_document)
 
         if annotated_pdf is not None:
@@ -267,5 +267,5 @@ def init_document_process(document_dict: dict):
                     logs=analysis_report_logs,
                     analysis_run_time=process_time,
                 )
-            except (Exception,):
+            except Exception:
                 logger.exception(f"Could not create analysis report data for document {db_document.id}.")

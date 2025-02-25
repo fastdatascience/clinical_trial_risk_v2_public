@@ -1,12 +1,15 @@
 services:
     api:
         build:
-            context: .
-            dockerfile: ./docker/api/Dockerfile
+            context: ./back_end
+            dockerfile: docker/api/Dockerfile
         image: clinical-trials-api:latest
         pull_policy: never
         restart: always
-        command: hypercorn --config=hypercorn-docker.toml app.main:app
+        command: bash -c "
+            source /tmp/envfile
+            && hypercorn --config=hypercorn-docker.toml app.main:app
+            "
         ports:
             - "5000:5000"
         volumes:
@@ -48,8 +51,8 @@ services:
 
     tika-grpc:
         build:
-            context: .
-            dockerfile: ./docker/tika-grpc/Dockerfile
+            context: ./back_end
+            dockerfile: docker/tika-grpc/Dockerfile
         image: clinical-trials-tika-grpc:latest
         pull_policy: never
         restart: always
@@ -101,8 +104,8 @@ services:
 
     front:
         build:
-            context: .
-            dockerfile: ./docker/front/Dockerfile
+            context: ./front_end
+            dockerfile: Dockerfile
         image: clinical-trials-front:latest
         pull_policy: never
         restart: always

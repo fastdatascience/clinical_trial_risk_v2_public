@@ -71,7 +71,6 @@ def create_analysis_report_data_and_upload_to_storage(
     analysis_report_file_storage_key = utils.create_analysis_report_file_storage_key(
         user_resource_identifier=db_user.user_resource_identifier,
         filename=system_assigned_name,
-        storage_provider=config.STORAGE_PROVIDER,
     )
     storage_client.put_file(
         file_name=analysis_report_file_storage_key,
@@ -170,7 +169,6 @@ def get_user_analysis_report_data_storage_keys(
         create_analysis_report_file_storage_key(
             user_resource_identifier=user.user_resource_identifier,
             filename=x.system_assigned_name,
-            storage_provider=config.STORAGE_PROVIDER,
         )
         for x in db_analysis_reports
     ]
@@ -213,7 +211,6 @@ def get_user_documents_storage_keys(
             create_document_file_storage_key(
                 user_resource_identifier=user.user_resource_identifier,
                 filename=db_document.system_assigned_name,
-                storage_provider=config.STORAGE_PROVIDER,
             )
         )
 
@@ -225,7 +222,6 @@ def get_user_documents_storage_keys(
                 create_document_file_storage_key(
                     user_resource_identifier=user.user_resource_identifier,
                     filename=f"{file_no_ext}_annotated.{file_extension}",
-                    storage_provider=config.STORAGE_PROVIDER,
                 )
             )
 

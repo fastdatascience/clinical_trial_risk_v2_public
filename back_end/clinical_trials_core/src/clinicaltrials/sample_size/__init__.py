@@ -157,9 +157,10 @@ negative_patterns.append([{"LIKE_NUM": True}, {"LOWER": {
            "years", "hours", "seconds", "minutes", "sec", "hour", "minute", "year", "month", "day", "second", "week",
            "min", "mcg", "cc", "ng", "kcal", "cal", "events", "stations", "channels", "dollars", "usd", "gbp", "pounds",
            "euros",
-           "mol", "mmol", "mi", "h", "hr", "hrs", "s", "m", "km", "lb", "oz", "moles", "mole", "wk", "wks", "week",
+           "mol", "mmol", "mi", "h", "hr", "hrs", "s", "m", "km", "lb", "oz", "moles", "mole", "wk", "wks", "week", "ounces",
+           "grams", "milligrams",
            "weeks", "µm", "cases", "progression", "death", "adverse", "yrs", "ae", "sae", "aes", "saes", "teae",
-           "teaes",
+           "teaes", "capsules",
            "cups", "treatments", "lesions", "injuries", "copies",
            "cells", "appointments", "µg", "μg", "episodes", "incidents", "sites", "locations", "countries", "centres",
            "centers", "liters", "litres", "milliliters", "millilitres", "centiliters", "centilitres",
@@ -324,7 +325,7 @@ def extract_features(tokenised_pages: list):
             end = min(len(tokens) - 1, phrase_match[2] + 15)
 
             contexts[value] = (
-                contexts[value] + " " + f"Page {page_no + 1}: " + " ".join(tokens[start:end])).strip()
+                contexts[value] + " " + f"Page {page_no + 1}: " + "".join([all_tokens[t][2].text + all_tokens[t][2].whitespace_ for t in range(start, end)]))
 
             match_start_char = doc[phrase_match[1]].idx
             if phrase_match[2] < len(doc):
@@ -475,7 +476,7 @@ class SampleSize(BaseProcessor):
 if __name__ == "__main__":
     d = SampleSize()
     # document = Document(pages=[Page(content="we will recruit 100 subjects", page_number=1)])
-    with open("/home/thomas/clinical_trials/data/ctgov/preprocessed_tika/62_NCT03977662_Prot_SAP_001.pdf.pkl",
+    with open("/home/thomas/clinical_trials/data/ctgov/preprocessed_tika/47_NCT02946047_Prot_SAP_000.pdf.pkl",
               "rb") as f:
         pages = pkl.load(f)
     document = Document(

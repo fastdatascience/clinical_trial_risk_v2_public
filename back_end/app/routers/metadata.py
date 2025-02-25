@@ -38,7 +38,7 @@ async def get_platform_metadata(core_lib_version: str = Depends(get_core_lib_ver
 
 @router.get(path="/engine")
 async def get_ct_core_metadata(
-    _: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER])),
+    _: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER, RoleEnum.GUEST])),
     modules: list[str] = Depends(get_ct_core_modules_list),
     metadata: list[dict] = Depends(get_ct_core_metadata_dict),
     derived_modules_and_metadata=Depends(get_derived_modules_and_metadata),

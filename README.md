@@ -40,9 +40,8 @@ git clone https://github.com/fastdatascience/clinical_trial_risk_v2_public
 #### 2.2 Default user for login
 
 A new user will be created when you run the application for the first time only.
-The email for this user is `publicdocker@fastdatascience.com`.
-You can find the password at `/back_end/.env`, look for the env `PUBLIC_DOCKER_USER_PASSWORD` and change the default
-password set if needed.
+The email for this user is `publicdocker@fastdatascience.com` and the default password is `tM934j@I`.
+You can change the password at `/back_end/.env`, look for the env `PUBLIC_DOCKER_USER_PASSWORD`.
 
 ### 3. Containers
 

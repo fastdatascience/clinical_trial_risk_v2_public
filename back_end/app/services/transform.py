@@ -376,6 +376,10 @@ def transform_data_for_rac(
                 )
             )
 
+            # todo These need to be added to the result dictionary itself to ensure that the data read on the client side remains consistent
+            result.setdefault("international", {}).setdefault("prediction", international_value)
+            result.setdefault("lmic", {}).setdefault("prediction", is_lmic)
+
             continue
 
         cost_nodes.append(CTNode.create_node(feature=meta.id, description=description, value=value, weight=cost_weight))

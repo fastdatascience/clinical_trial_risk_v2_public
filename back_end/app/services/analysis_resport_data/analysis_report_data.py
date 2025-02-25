@@ -1,15 +1,17 @@
 import io
 import re
 import time
-from typing import Any
 from collections import OrderedDict
+from typing import Any
 
 import numpy as np
 import pandas as pd
-from plotly import express as px, graph_objects as pgo, subplots as psp
+from clinicaltrials.core import ClassifierConfig
+from plotly import express as px
+from plotly import graph_objects as pgo
+from plotly import subplots as psp
 from pydantic import BaseModel, Field
 from spacy.tokens import Doc as SpacyDoc
-from clinicaltrials.core import ClassifierConfig
 
 from app import schemas, services, utils
 from app.models.document.document import Document
@@ -33,7 +35,7 @@ class AnalysisReportData:
         trial_risk_score: tuple[float, str],
         ct_cost_nodes: list[CTNode],
         ct_risk_nodes: list[CTNode],
-        weights:  WeightProfileBase,
+        weights: WeightProfileBase,
         logs: OrderedDict[str, list[str]],
         analysis_run_time: float = None,
     ):
@@ -79,9 +81,7 @@ class AnalysisReportData:
         self.__risk_threshold = weights.risk_thresholds
 
         # Tertiles data
-        self.__tertiles_data_transformed = self.__tertile_data_transformed(
-            sample_size_tertiles=weights.to_serializable_sample_size_tertiles()
-        )
+        self.__tertiles_data_transformed = self.__tertile_data_transformed(sample_size_tertiles=weights.to_serializable_sample_size_tertiles())
 
         # List of page numbers
         self.__page_numbers = list(range(1, 1 + len(self.__tokenised_pages)))
@@ -92,24 +92,16 @@ class AnalysisReportData:
         # Risk
         self.__risk_score = self.__trial_risk_score[0]
         self.__risk_level = self.__trial_risk_score[1]
-        self.__risk_score_100_point_scale = (
-            self.__calculate_risk_score_100_point_scale()
-        )
+        self.__risk_score_100_point_scale = self.__calculate_risk_score_100_point_scale()
 
         # Condition result
         condition_result: dict = self.__user_resource_usage_result["condition"]
         self.__condition_prediction: str = condition_result["prediction"]
         self.__condition_score: float = condition_result["score"]
         self.__condition_pages: dict[str, list[float]] = condition_result["pages"]
-        self.__condition_page_scores: list[float] = condition_result.get(
-            "page_scores", []
-        )
-        self.__condition_score_percentage: str = self.__score_to_percentage(
-            self.__condition_score
-        )
-        self.__condition_context: dict[str, list[float]] = condition_result.get(
-            "context", {}
-        )
+        self.__condition_page_scores: list[float] = condition_result.get("page_scores", [])
+        self.__condition_score_percentage: str = self.__score_to_percentage(self.__condition_score)
+        self.__condition_context: dict[str, list[float]] = condition_result.get("context", {})
 
         # Phase result
         phase_result: dict = self.__user_resource_usage_result["phase"]
@@ -128,75 +120,45 @@ class AnalysisReportData:
         self.__sap_context: dict[str, list[float]] = sap_result.get("context", {})
 
         # Effect estimate result
-        effect_estimate_result: dict = self.__user_resource_usage_result[
-            "effect_estimate"
-        ]
-        self.__effect_estimate_prediction: int = int(
-            effect_estimate_result["prediction"]
-        )
+        effect_estimate_result: dict = self.__user_resource_usage_result["effect_estimate"]
+        self.__effect_estimate_prediction: int = int(effect_estimate_result["prediction"])
         self.__effect_estimate_score: float = effect_estimate_result["score"]
-        self.__effect_estimate_pages: dict[str, list[float]] = effect_estimate_result[
-            "pages"
-        ]
-        self.__effect_estimate_page_scores: list[float] = effect_estimate_result.get(
-            "page_scores", []
-        )
-        self.__effect_estimate_score_percentage: str = self.__score_to_percentage(
-            self.__effect_estimate_score
-        )
-        self.__effect_estimate_context: dict[str, list[float]] = (
-            effect_estimate_result.get("context", {})
-        )
+        self.__effect_estimate_pages: dict[str, list[float]] = effect_estimate_result["pages"]
+        self.__effect_estimate_page_scores: list[float] = effect_estimate_result.get("page_scores", [])
+        self.__effect_estimate_score_percentage: str = self.__score_to_percentage(self.__effect_estimate_score)
+        self.__effect_estimate_context: dict[str, list[float]] = effect_estimate_result.get("context", {})
 
         # Country result
         country_result: dict = self.__user_resource_usage_result["country"]
         self.__country_prediction: list[str] = country_result["prediction"]
         self.__country_pages: dict[str, list[float]] = country_result["pages"]
         self.__country_page_scores: list[float] = country_result.get("page_scores", [])
-        self.__country_context: dict[str, list[float]] = country_result.get(
-            "context", {}
-        )
+        self.__country_context: dict[str, list[float]] = country_result.get("context", {})
 
         # Simulation result
         simulation_result: dict = self.__user_resource_usage_result["simulation"]
         self.__simulation_prediction: int = int(simulation_result["prediction"])
         self.__simulation_score: float = simulation_result["score"]
-        self.__simulation_score_percentage: str = self.__score_to_percentage(
-            self.__simulation_score
-        )
+        self.__simulation_score_percentage: str = self.__score_to_percentage(self.__simulation_score)
         self.__simulation_pages: dict[str, list[float]] = simulation_result["pages"]
-        self.__simulation_page_scores: list[float] = simulation_result.get(
-            "page_scores", []
-        )
-        self.__simulation_context: dict[str, list[float]] = simulation_result.get(
-            "context", {}
-        )
+        self.__simulation_page_scores: list[float] = simulation_result.get("page_scores", [])
+        self.__simulation_context: dict[str, list[float]] = simulation_result.get("context", {})
 
         # Sample size result
         sample_size_result: dict = self.__user_resource_usage_result["sample_size"]
         self.__sample_size_prediction: int = int(sample_size_result["prediction"])
         self.__sample_size_score: float = sample_size_result["score"]
         self.__sample_size_pages: dict[str, list[float]] = sample_size_result["pages"]
-        self.__sample_size_page_scores: list[float] = sample_size_result.get(
-            "page_scores", []
-        )
-        self.__sample_size_score_percentage: str = self.__score_to_percentage(
-            self.__sample_size_score
-        )
-        self.__sample_size_context: dict[str, list[float]] = sample_size_result.get(
-            "context", {}
-        )
+        self.__sample_size_page_scores: list[float] = sample_size_result.get("page_scores", [])
+        self.__sample_size_score_percentage: str = self.__score_to_percentage(self.__sample_size_score)
+        self.__sample_size_context: dict[str, list[float]] = sample_size_result.get("context", {})
 
         # Number of Arms result
         num_arms_result: dict = self.__user_resource_usage_result["num_arms"]
         self.__num_arms_prediction: int = int(num_arms_result["prediction"])
         self.__num_arms_pages: dict[str, list[float]] = num_arms_result["pages"]
-        self.__num_arms_page_scores: list[float] = num_arms_result.get(
-            "page_scores", []
-        )
-        self.__num_arms_context: dict[str, list[float]] = num_arms_result.get(
-            "context", {}
-        )
+        self.__num_arms_page_scores: list[float] = num_arms_result.get("page_scores", [])
+        self.__num_arms_context: dict[str, list[float]] = num_arms_result.get("context", {})
 
     def generate(self) -> schemas.AnalysisReportData:
         """
@@ -219,9 +181,7 @@ class AnalysisReportData:
         sample_size_tertiles = self.__get_sample_size_tertiles()
 
         # Explanation Overview of Word Counts by Page
-        explanation_overview_of_word_counts_by_page = (
-            self.__get_explanation_overview_of_word_counts_by_page()
-        )
+        explanation_overview_of_word_counts_by_page = self.__get_explanation_overview_of_word_counts_by_page()
 
         # Explanation Condition
         explanation_condition = self.__get_explanation_by_key(
@@ -313,11 +273,7 @@ class AnalysisReportData:
                 explanation_extra_surtitle_text=explanation_phase.extra_surtitle_text,
                 context=explanation_phase.context,
             ),
-            overview_word_counts_by_page=schemas.OverviewWordCountsByPageReportData(
-                explanation_img_base64=explanation_overview_of_word_counts_by_page[
-                    "graph_base64"
-                ]
-            ),
+            overview_word_counts_by_page=schemas.OverviewWordCountsByPageReportData(explanation_img_base64=explanation_overview_of_word_counts_by_page["graph_base64"]),
             sap=schemas.SapReportData(
                 prediction=str(self.__sap_prediction),
                 explanation_img_base64=explanation_sap.graph_base64,
@@ -345,9 +301,7 @@ class AnalysisReportData:
                 context=explanation_num_arms.context,
             ),
             country=schemas.CountryReportData(
-                prediction=utils.pretty_print_countries(
-                    countries=self.__country_prediction
-                ),
+                prediction=utils.pretty_print_countries(countries=self.__country_prediction),
                 explanation_img_base64=explanation_country.graph_base64,
                 explanation_extra_surtitle_text=explanation_country.extra_surtitle_text,
                 context=explanation_country.context,
@@ -387,9 +341,7 @@ class AnalysisReportData:
 
         # Generate wordcloud
         classifier_config = ClassifierConfig()
-        res_wordcloud_generator = services.WordcloudGenerator(
-            classifier_path=f"{classifier_config.classifier_storage_path}/idfs_for_word_cloud.pkl.bz2"
-        ).generate(
+        res_wordcloud_generator = services.WordcloudGenerator(classifier_path=f"{classifier_config.classifier_storage_path}/idfs_for_word_cloud.pkl.bz2").generate(
             tokenised_pages=self.__tokenised_pages,
             condition_to_pages=self.__user_resource_usage_result["condition"]["pages"],
         )
@@ -539,7 +491,7 @@ class AnalysisReportData:
             "",
             "",
             "",
-            f"because the trial has {self.__num_arms_prediction} arm{'s'[:self.__num_arms_prediction ^ 1]}",
+            f"because the trial has {self.__num_arms_prediction} arm{'s'[: self.__num_arms_prediction ^ 1]}",
             f"because the trial is Phase {phase_prediction_str}",
             "because the trial included a Statistical Analysis Plan (SAP)",
             "because the authors disclosed an effect estimate",
@@ -604,24 +556,15 @@ class AnalysisReportData:
         start_score_index = 5
 
         # Excel formula
-        df["Excel Formula"] = [
-            f"=B{r}*C{r}" if r > start_score_index + 1 else ""
-            for r in range(2, len(df) + 2)
-        ]
+        df["Excel Formula"] = [f"=B{r}*C{r}" if r > start_score_index + 1 else "" for r in range(2, len(df) + 2)]
 
         self.__logs["risk"].append("Calculating the total score.")
         for idx in range(-1, len(df) - 1):
-            if df["Score"].iloc[idx] is not None and (
-                df["Score"].iloc[idx] > 0 or df["Score"].iloc[idx] < 0
-            ):
+            if df["Score"].iloc[idx] is not None and (df["Score"].iloc[idx] > 0 or df["Score"].iloc[idx] < 0):
                 if df["Reason"].iloc[idx] == "CONSTANT":
-                    self.__logs["risk"].append(
-                        f"Start at {df['Score'].iloc[idx]} points."
-                    )
+                    self.__logs["risk"].append(f"Start at {df['Score'].iloc[idx]} points.")
                 else:
-                    self.__logs["risk"].append(
-                        f"Add {df['Score'].iloc[idx]} points {df['Reason'].iloc[idx]}."
-                    )
+                    self.__logs["risk"].append(f"Add {df['Score'].iloc[idx]} points {df['Reason'].iloc[idx]}.")
 
         # Calculate total score
         total_score = int(df["Score"].dropna().sum())
@@ -635,9 +578,7 @@ class AnalysisReportData:
             f"Scores between {self.__risk_threshold.low} and 100 are low risk, scores between {self.__risk_threshold.high} and {self.__risk_threshold.low} are medium risk, and scores between 0 and {self.__risk_threshold.high} are high risk."
         )
         self.__logs["risk"].append(f"Risk is therefore {self.__risk_level.upper()}.")
-        self.__logs["risk"].append(
-            f"Score calculated in {score_calc_end_time - score_calc_start_time:.2f} seconds."
-        )
+        self.__logs["risk"].append(f"Score calculated in {score_calc_end_time - score_calc_start_time:.2f} seconds.")
 
         # Add total score row
         df.loc[len(df)] = [
@@ -762,9 +703,7 @@ class AnalysisReportData:
         )
 
         # Log
-        res_heatmap.log = self.__prepend_text(
-            current_text=res_heatmap.log, new_text=f"Explanation {key_name}"
-        )
+        res_heatmap.log = self.__prepend_text(current_text=res_heatmap.log, new_text=f"Explanation {key_name}")
 
         return res_heatmap
 
@@ -804,9 +743,7 @@ class AnalysisReportData:
         for page_value in pages.values():
             total_terms_found += len(page_value)
         if total_terms_found == 0:
-            extra_surtitle_text = (
-                f"No terms relating to {key_name} were found in the document."
-            )
+            extra_surtitle_text = f"No terms relating to {key_name} were found in the document."
 
         # Page matrix with zeros
         page_matrix = np.zeros(
@@ -885,9 +822,7 @@ class AnalysisReportData:
                     context_item_title = key
 
                 # Append context item
-                context_dict["items"].append(
-                    {"title": context_item_title, "pages": context_item_pages}
-                )
+                context_dict["items"].append({"title": context_item_title, "pages": context_item_pages})
 
         # Add probability trace
         if page_scores:
@@ -983,14 +918,7 @@ class AnalysisReportData:
         lower_tertile_key_name = "lower_tertile"
         upper_tertile_key_name = "upper_tertile"
 
-        if (
-            not self.__sample_size_prediction
-            or not self.__phase_prediction
-            or (
-                self.__condition_prediction != "HIV"
-                and self.__condition_prediction != "TB"
-            )
-        ):
+        if not self.__sample_size_prediction or not self.__phase_prediction or (self.__condition_prediction != "HIV" and self.__condition_prediction != "TB"):
             return {
                 sample_size_tertile_key_name: 0,
                 lower_tertile_key_name: 0,
@@ -1004,12 +932,8 @@ class AnalysisReportData:
             lookup = self.__phase_prediction * 2
 
         # Lower tertile and upper tertile
-        lower = self.__tertiles_data_transformed[lookup][
-            self.__condition_prediction + " lower tertile"
-        ]
-        upper = self.__tertiles_data_transformed[lookup][
-            self.__condition_prediction + " upper tertile"
-        ]
+        lower = self.__tertiles_data_transformed[lookup][self.__condition_prediction + " lower tertile"]
+        upper = self.__tertiles_data_transformed[lookup][self.__condition_prediction + " upper tertile"]
 
         if self.__sample_size_prediction < lower:
             return {

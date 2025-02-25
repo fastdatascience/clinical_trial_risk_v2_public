@@ -57,7 +57,13 @@ from app.services import PdfGenerator
 from app.services.pdf_generator.pdf_generator import PDF_GENERATOR_AVAILABLE, WKHTMLTOPDF_IO_ERROR_MESSAGE
 from app.services.storage_provider import StorageProvider
 from app.services.transform import get_total_trial_cost, get_trial_risk_score, transform_data_for_rac
-from app.utils import create_analysis_report_file_storage_key, remove_file_extension, create_document_file_storage_key
+from app.utils import (
+    calculate_processing_time_limit,
+    create_analysis_report_file_storage_key,
+    create_document_file_storage_key,
+    get_number_of_pages_from_pdf,
+    remove_file_extension,
+)
 
 router = APIRouter()
 
@@ -209,7 +215,6 @@ async def upload_document(
     upload_path = create_document_file_storage_key(
         user_resource_identifier=db_user.user_resource_identifier,
         filename=document_name,
-        storage_provider=STORAGE_PROVIDER,
     )
 
     storage_client.put_file(file_name=upload_path, data=file_contents, content_type=document.content_type)
@@ -247,15 +252,20 @@ async def upload_document(
 
     session.commit()
 
+    processing_time_limit = calculate_processing_time_limit(get_number_of_pages_from_pdf(file_contents=file_contents))
+
     if user.user.id is not None and document_record.id is not None:
-        init_document_process.delay(  # type: ignore
-            DocumentQueueItem(
-                s3_bucket_name=BUCKET_OR_CONTAINER_NAME,
-                resource_url=upload_path,
-                user_id=user.user.id,
-                document_id=document_record.id,
-                user_resource_identifier=db_user.user_resource_identifier,
-            ).model_dump()
+        init_document_process.apply_async(  # type: ignore
+            kwargs={
+                "document_dict": DocumentQueueItem(
+                    s3_bucket_name=BUCKET_OR_CONTAINER_NAME,
+                    resource_url=upload_path,
+                    user_id=user.user.id,
+                    document_id=document_record.id,
+                    user_resource_identifier=db_user.user_resource_identifier,
+                ).model_dump()
+            },
+            time_limit=processing_time_limit,
         )
 
     return ServerResponse(data={**document_record.model_dump()})
@@ -511,7 +521,6 @@ async def get_a_document_object(
     file_path = create_document_file_storage_key(
         user_resource_identifier=db_user.user_resource_identifier,
         filename=document.system_assigned_name,
-        storage_provider=STORAGE_PROVIDER,
     )
     file_content = storage_client.get_file(file_name=file_path)
     if file_content is None:
@@ -618,7 +627,6 @@ async def export_run_result_to_pdf(
         analysis_report_file_storage_key = create_analysis_report_file_storage_key(
             user_resource_identifier=db_user.user_resource_identifier,
             filename=db_analysis_report.system_assigned_name,
-            storage_provider=STORAGE_PROVIDER,
         )
         try:
             filebytes = storage_client.get_file(file_name=analysis_report_file_storage_key)
@@ -636,7 +644,6 @@ async def export_run_result_to_pdf(
         document_file_path = create_document_file_storage_key(
             user_resource_identifier=db_user.user_resource_identifier,
             filename=db_document.system_assigned_name,
-            storage_provider=STORAGE_PROVIDER,
         )
         document_bytes = storage_client.get_file(file_name=document_file_path)
 
