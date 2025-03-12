@@ -5,8 +5,9 @@ from app.database import paginate
 from app.models.server_response import ServerResponse
 from app.models.user.base import UserWithRoles
 from app.models.user.role import RoleEnum
-from app.models.weight_profile.base import DynamicProfile, UpdateDynamicProfile, UserWeightProfile, WeightProfile, WeightProfileBase, WeightTypeEnum
+from app.models.weight_profile.base import DynamicProfile, UpdateDynamicProfile, UserWeightProfile, WeightProfile, WeightTypeEnum
 from app.resources import get_ct_core_modules_list, get_db, get_user_with_roles
+from clinicaltrials.schemas import WeightProfileBase
 
 router = APIRouter()
 
@@ -21,8 +22,8 @@ def transform_weights_by_weight_type(data: WeightProfile, weight_type: WeightTyp
     match weight_type:
         case WeightTypeEnum.CRM:
             return weights.to_serializable_cost_risk_models(group=True)
-        case WeightTypeEnum.SST:
-            return weights.to_serializable_sample_size_tertiles()
+        case WeightTypeEnum.TT:
+            return weights.to_serializable_tertiles()
         case WeightTypeEnum.RT:
             return weights.to_serializable_risk_thresholds()
         case _:

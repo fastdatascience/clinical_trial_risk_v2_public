@@ -56,8 +56,9 @@ async def get_ct_core_metadata(
 
 @router.get(path="/engine/weights")
 async def get_ct_core_module_weight(
-    _: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER])),
+    _: UserWithRoles = Depends(get_user_with_roles(required_roles=[RoleEnum.USER, RoleEnum.GUEST])),
     modules: list[str] = Depends(get_ct_core_modules_list),
 ):
     module_weights = {module: {"weight": 0, "score": 0} for module in modules}
+
     return ServerResponse(data=module_weights)

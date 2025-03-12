@@ -1,6 +1,7 @@
 import React from "react";
 import { Input } from "@material-tailwind/react";
 import { InputProps } from "../../utils/types";
+import { classNames } from "../../utils/utils.ts";
 
 const CustomTextField: React.FC<InputProps> = ({
     initialValue = "",
@@ -9,6 +10,7 @@ const CustomTextField: React.FC<InputProps> = ({
     handleChange,
     min,
     max,
+    disabled = false,
 }) => {
     return (
         <div className="w-full">
@@ -16,13 +18,20 @@ const CustomTextField: React.FC<InputProps> = ({
                 size="md"
                 color="teal"
                 value={initialValue}
-                className="rounded-full bg-white border-none"
+                className={classNames(
+                    disabled ? "text-gray-500" : "",
+                    "rounded-full bg-white !border !border-blue-gray-200 focus:outline-1 mt-1"
+                )}
                 crossOrigin={undefined}
                 readOnly={readonly}
                 type={type}
                 onChange={handleChange}
                 min={min}
                 max={max}
+                disabled={disabled}
+                labelProps={{
+                    className: "hidden",
+                }}
             />
         </div>
     );

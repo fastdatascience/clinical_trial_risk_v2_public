@@ -7,7 +7,7 @@ import time
 from spacy.matcher import Matcher, PhraseMatcher
 
 from clinicaltrials.core import BaseProcessor, ClassifierConfig, Document, Metadata, Page
-from clinicaltrials.model_store import get_models
+from clinicaltrials import model_store
 from clinicaltrials.resources import nlp
 
 patterns = dict()
@@ -195,12 +195,13 @@ class Age(BaseProcessor):
         return Metadata(
             id="age",
             name="Age",
-            feature_type="numeric_range",
+            feature_type="multiple_numeric",
+            has_multiple_predictions=True,
         )
 
     def process(self, document: Document, config: ClassifierConfig | None = None):
         if not self.model:
-            self.model = get_models().age_model
+            self.model = model_store.get_models().age_model
 
         model_lower, model_upper, model_nb_lower, model_nb_upper = self.model
 

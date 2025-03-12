@@ -115,7 +115,7 @@ class NumSites(BaseProcessor):
 
     @property
     def metadata(self) -> Metadata:
-        return Metadata(id="num_sites", name="Number of investigational sites in the trial", feature_type="numeric", )
+        return Metadata(id="num_sites", name="Number of investigational sites in the trial", feature_type="numeric", is_tertile=True)
 
     def process(self, document: Document, config: ClassifierConfig | None = None):
         candidates = []  # will be a list of tuples containing data: cohort value, is explicitly mentioning cohort size, distance to mention of cohort

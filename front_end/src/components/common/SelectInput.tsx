@@ -2,11 +2,13 @@ import React from "react";
 import { Listbox, Transition } from "@headlessui/react";
 import { FaChevronDown } from "react-icons/fa";
 import type { SelectInputProps } from "../../utils/types";
+import { classNames } from "../../utils/utils.ts";
 
 const SelectInput: React.FC<SelectInputProps> = ({
     placeholder,
     options,
     value,
+    disabled = false,
     onChange,
 }) => {
     const selectedOption = options?.find((option) => option.value === value);
@@ -14,21 +16,27 @@ const SelectInput: React.FC<SelectInputProps> = ({
 
     return (
         <div className="w-full z-40">
-            <Listbox value={value} onChange={onChange}>
+            <Listbox value={value} onChange={onChange} disabled={disabled}>
                 <div className="relative mt-1">
                     <Listbox.Button
-                        className={
-                            "relative w-full flex border border-blue-gray-200  cursor-pointer items-center rounded-large h-10 p-3 text-left bg-white sm:text-sm"
-                        }
+                        className={classNames(
+                            disabled ? "bg-blue-gray-50 cursor-not-allowed" : "cursor-pointer bg-white border-blue-gray-200",
+                            "relative w-full flex border items-center rounded-large h-10 p-3 text-left sm:text-sm"
+                        )}
                     >
                         <span
-                            className={`block truncate ${
-                                displayValue ? "text-gray-800" : "text-gray-500"
-                            }  font-normal`}
+                            className={
+                            classNames(
+                                "block truncate",
+                                disabled ? "text-gray-500" : `${displayValue ? "text-gray-800" : "text-gray-500"} font-normal`,
+                            )}
                         >
                             {displayValue ?? placeholder}
                         </span>
-                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                        <span className={classNames(
+                            disabled ? "text-gray-300" : "",
+                            "pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+                        )}>
                             <FaChevronDown aria-hidden="true" />
                         </span>
                     </Listbox.Button>

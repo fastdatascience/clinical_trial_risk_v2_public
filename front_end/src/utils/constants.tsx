@@ -18,7 +18,7 @@ import {
     CostCalculation,
 } from "../components/explainAnalysis/tabPanelComponents";
 import CostRiskModelProfile from "../components/settings/InnerSettings/WeightProfile/CostRiskModelProfile";
-import SampleSizeTertile from "../components/settings/InnerSettings/WeightProfile/SampleSizeTertile";
+import Tertiles from "../components/settings/InnerSettings/WeightProfile/Tertiles";
 import RiskThreshold from "../components/settings/InnerSettings/WeightProfile/RiskThreshold";
 import { FaThreads } from "react-icons/fa6";
 import MyAccount from "../components/settings/InnerSettings/MyAccount/MyAccount";
@@ -105,8 +105,8 @@ export const weightTabItems: TabItem<unknown>[] = [
     },
     {
         id: 3,
-        label: "Sample Size Tertiles",
-        renderTabPanelComponent: () => <SampleSizeTertile />,
+        label: "Tertiles",
+        renderTabPanelComponent: () => <Tertiles />,
     },
 ];
 

@@ -144,13 +144,17 @@
             "cost": 0,
             "risk": 5.3763440860215
         },
+        "multiple_drugs": {
+            "cost": 0,
+            "risk": -3.2258064516129
+        },
         "num_arms": {
             "cost": 0,
             "risk": 1.25448028673835
         },
         "num_drugs": {
             "cost": 0,
-            "risk": -3.2258064516129
+            "risk": 0
         },
         "num_endpoints": {
             "cost": 0,
@@ -236,6 +240,10 @@
             "cost": 0,
             "risk": 0
         },
+        "sample_size_tertile": {
+            "cost": 0,
+            "risk": 4.3010752688172
+        },
         "sap": {
             "cost": 0,
             "risk": 11.4695340501792
@@ -246,6 +254,7 @@
         },
         "trial_size": {
             "cost": 0,
+            "notes": "delete this once sample_size_tertile is working",
             "risk": 4.3010752688172
         },
         "vaccine": {
@@ -253,272 +262,290 @@
             "risk": 0
         }
     },
-    "duration_tertiles": [
-        {
-            "condition": "*",
-            "lower_tertile": 1,
-            "phase": "*",
-            "upper_tertile": 2
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 0.5,
-            "phase": 0,
-            "upper_tertile": 1
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 0.5,
-            "phase": 0.5,
-            "upper_tertile": 1
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 0.5,
-            "phase": 1,
-            "upper_tertile": 1
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 1,
-            "phase": 1.5,
-            "upper_tertile": 2
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 1,
-            "phase": 2,
-            "upper_tertile": 2
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 2,
-            "phase": 2.5,
-            "upper_tertile": 4
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 2,
-            "phase": 3,
-            "upper_tertile": 4
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 3,
-            "phase": 4,
-            "upper_tertile": 6
-        }
-    ],
-    "num_sites_tertiles": [
-        {
-            "condition": "*",
-            "lower_tertile": 1,
-            "phase": "*",
-            "upper_tertile": 10
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 0,
-            "phase": 0,
-            "upper_tertile": 1
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 0,
-            "phase": 0.5,
-            "upper_tertile": 1
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 1,
-            "phase": 1,
-            "upper_tertile": 4
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 5,
-            "phase": 1.5,
-            "upper_tertile": 15
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 10,
-            "phase": 2,
-            "upper_tertile": 20
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 20,
-            "phase": 2.5,
-            "upper_tertile": 40
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 35,
-            "phase": 3,
-            "upper_tertile": 55
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 35,
-            "phase": 4,
-            "upper_tertile": 55
-        }
-    ],
     "risk_thresholds": {
-        "high": 40,
-        "low": 50
+        "high": 30,
+        "low": 40
     },
-    "sample_size_tertiles": [
-        {
-            "condition": "*",
-            "lower_tertile": 100,
-            "phase": "*",
-            "upper_tertile": 1000
-        },
-        {
-            "condition": "HIV",
-            "lower_tertile": 10,
-            "phase": 0,
-            "upper_tertile": 15
-        },
-        {
-            "condition": "HIV",
-            "lower_tertile": 40,
-            "phase": 0.5,
-            "upper_tertile": 130
-        },
-        {
-            "condition": "HIV",
-            "lower_tertile": 40,
-            "phase": 1,
-            "upper_tertile": 130
-        },
-        {
-            "condition": "HIV",
-            "lower_tertile": 80,
-            "phase": 1.5,
-            "upper_tertile": 280
-        },
-        {
-            "condition": "HIV",
-            "lower_tertile": 100,
-            "phase": 2,
-            "upper_tertile": 300
-        },
-        {
-            "condition": "HIV",
-            "lower_tertile": 1000,
-            "phase": 2.5,
-            "upper_tertile": 2000
-        },
-        {
-            "condition": "HIV",
-            "lower_tertile": 1000,
-            "phase": 3,
-            "upper_tertile": 2000
-        },
-        {
-            "condition": "HIV",
-            "lower_tertile": 3000,
-            "phase": 4,
-            "upper_tertile": 4000
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 10,
-            "phase": 0,
-            "upper_tertile": 15
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 40,
-            "phase": 0.5,
-            "upper_tertile": 130
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 40,
-            "phase": 1,
-            "upper_tertile": 130
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 80,
-            "phase": 1.5,
-            "upper_tertile": 280
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 100,
-            "phase": 2,
-            "upper_tertile": 300
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 1000,
-            "phase": 2.5,
-            "upper_tertile": 2000
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 1000,
-            "phase": 3,
-            "upper_tertile": 2000
-        },
-        {
-            "condition": "*",
-            "lower_tertile": 3000,
-            "phase": 4,
-            "upper_tertile": 4000
-        },
-        {
-            "condition": "TB",
-            "lower_tertile": 10,
-            "phase": 0,
-            "upper_tertile": 15
-        },
-        {
-            "condition": "TB",
-            "lower_tertile": 30,
-            "phase": 0.5,
-            "upper_tertile": 60
-        },
-        {
-            "condition": "TB",
-            "lower_tertile": 30,
-            "phase": 1,
-            "upper_tertile": 60
-        },
-        {
-            "condition": "TB",
-            "lower_tertile": 40,
-            "phase": 1.5,
-            "upper_tertile": 80
-        },
-        {
-            "condition": "TB",
-            "lower_tertile": 50,
-            "phase": 2,
-            "upper_tertile": 100
-        },
-        {
-            "condition": "TB",
-            "lower_tertile": 500,
-            "phase": 2.5,
-            "upper_tertile": 1500
-        },
-        {
-            "condition": "TB",
-            "lower_tertile": 500,
-            "phase": 3,
-            "upper_tertile": 1500
-        },
-        {
-            "condition": "TB",
-            "lower_tertile": 3000,
-            "phase": 4,
-            "upper_tertile": 4000
-        }
-    ]
+    "tertiles": {
+        "duration_tertiles": [
+            {
+                "condition": "*",
+                "lower_tertile": 1,
+                "phase": "*",
+                "upper_tertile": 2
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 0.5,
+                "phase": 0,
+                "upper_tertile": 1
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 0.5,
+                "phase": 0.5,
+                "upper_tertile": 1
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 0.5,
+                "phase": 1,
+                "upper_tertile": 1
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 1,
+                "phase": 1.5,
+                "upper_tertile": 2
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 1,
+                "phase": 2,
+                "upper_tertile": 2
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 2,
+                "phase": 2.5,
+                "upper_tertile": 4
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 2,
+                "phase": 3,
+                "upper_tertile": 4
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 3,
+                "phase": 4,
+                "upper_tertile": 6
+            }
+        ],
+        "num_sites_tertiles": [
+            {
+                "condition": "*",
+                "lower_tertile": 1,
+                "phase": "*",
+                "upper_tertile": 10
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 0,
+                "phase": 0,
+                "upper_tertile": 1
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 0,
+                "phase": 0.5,
+                "upper_tertile": 1
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 1,
+                "phase": 1,
+                "upper_tertile": 4
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 5,
+                "phase": 1.5,
+                "upper_tertile": 15
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 10,
+                "phase": 2,
+                "upper_tertile": 20
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 20,
+                "phase": 2.5,
+                "upper_tertile": 40
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 35,
+                "phase": 3,
+                "upper_tertile": 55
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 35,
+                "phase": 4,
+                "upper_tertile": 55
+            }
+        ],
+        "num_visits_tertiles": [
+            {
+                "condition": "*",
+                "lower_tertile": 1,
+                "phase": "*",
+                "upper_tertile": 2
+            }
+        ],
+        "recency_tertiles": [
+            {
+                "condition": "*",
+                "lower_tertile": 1,
+                "phase": "*",
+                "upper_tertile": 2
+            }
+        ],
+        "sample_size_tertiles": [
+            {
+                "condition": "*",
+                "lower_tertile": 100,
+                "phase": "*",
+                "upper_tertile": 1000
+            },
+            {
+                "condition": "HIV",
+                "lower_tertile": 10,
+                "phase": 0,
+                "upper_tertile": 15
+            },
+            {
+                "condition": "HIV",
+                "lower_tertile": 40,
+                "phase": 0.5,
+                "upper_tertile": 130
+            },
+            {
+                "condition": "HIV",
+                "lower_tertile": 40,
+                "phase": 1,
+                "upper_tertile": 130
+            },
+            {
+                "condition": "HIV",
+                "lower_tertile": 80,
+                "phase": 1.5,
+                "upper_tertile": 280
+            },
+            {
+                "condition": "HIV",
+                "lower_tertile": 100,
+                "phase": 2,
+                "upper_tertile": 300
+            },
+            {
+                "condition": "HIV",
+                "lower_tertile": 1000,
+                "phase": 2.5,
+                "upper_tertile": 2000
+            },
+            {
+                "condition": "HIV",
+                "lower_tertile": 1000,
+                "phase": 3,
+                "upper_tertile": 2000
+            },
+            {
+                "condition": "HIV",
+                "lower_tertile": 3000,
+                "phase": 4,
+                "upper_tertile": 4000
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 10,
+                "phase": 0,
+                "upper_tertile": 15
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 40,
+                "phase": 0.5,
+                "upper_tertile": 130
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 40,
+                "phase": 1,
+                "upper_tertile": 130
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 80,
+                "phase": 1.5,
+                "upper_tertile": 280
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 100,
+                "phase": 2,
+                "upper_tertile": 300
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 1000,
+                "phase": 2.5,
+                "upper_tertile": 2000
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 1000,
+                "phase": 3,
+                "upper_tertile": 2000
+            },
+            {
+                "condition": "*",
+                "lower_tertile": 3000,
+                "phase": 4,
+                "upper_tertile": 4000
+            },
+            {
+                "condition": "TB",
+                "lower_tertile": 10,
+                "phase": 0,
+                "upper_tertile": 15
+            },
+            {
+                "condition": "TB",
+                "lower_tertile": 30,
+                "phase": 0.5,
+                "upper_tertile": 60
+            },
+            {
+                "condition": "TB",
+                "lower_tertile": 30,
+                "phase": 1,
+                "upper_tertile": 60
+            },
+            {
+                "condition": "TB",
+                "lower_tertile": 40,
+                "phase": 1.5,
+                "upper_tertile": 80
+            },
+            {
+                "condition": "TB",
+                "lower_tertile": 50,
+                "phase": 2,
+                "upper_tertile": 100
+            },
+            {
+                "condition": "TB",
+                "lower_tertile": 500,
+                "phase": 2.5,
+                "upper_tertile": 1500
+            },
+            {
+                "condition": "TB",
+                "lower_tertile": 500,
+                "phase": 3,
+                "upper_tertile": 1500
+            },
+            {
+                "condition": "TB",
+                "lower_tertile": 3000,
+                "phase": 4,
+                "upper_tertile": 4000
+            }
+        ]
+    }
 }

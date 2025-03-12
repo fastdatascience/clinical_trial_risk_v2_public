@@ -10,7 +10,7 @@ class NumVisits(BaseProcessor):
 
     @property
     def metadata(self) -> Metadata:
-        return Metadata(id="num_visits", name="Number of visits per subject", feature_type="numeric")
+        return Metadata(id="num_visits", name="Number of visits per subject", feature_type="numeric", is_tertile=True)
 
     def process(self, document: Document, config: ClassifierConfig | None = None):
         num_visits = 0

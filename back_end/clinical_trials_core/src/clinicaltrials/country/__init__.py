@@ -1,6 +1,7 @@
 import json
 import time
 
+from clinicaltrials import model_store
 from clinicaltrials.core import BaseProcessor, ClassifierConfig, Document, Metadata, MetadataOption, Page
 from clinicaltrials.country.country_ensemble_extractor import CountryEnsembleExtractor
 from clinicaltrials.country.country_extractor_rule_based import CountryExtractorRuleBased
@@ -8,7 +9,6 @@ from clinicaltrials.country.country_group_extractor import CountryGroupExtractor
 from clinicaltrials.country.international_extractor_naive_bayes import InternationalExtractorNaiveBayes
 from clinicaltrials.country.international_extractor_spacy import InternationalExtractorSpacy
 from clinicaltrials.logs_collector import LogsCollector
-from clinicaltrials import model_store
 
 country_extractor_rule_based = CountryExtractorRuleBased()
 
@@ -278,7 +278,7 @@ class Country(BaseProcessor):
                 MetadataOption(label="South Africa", value="ZA"),
                 MetadataOption(label="Zambia", value="ZM"),
                 MetadataOption(label="Zimbabwe", value="ZW"),
-            ],
+            ]
         )
 
     def process(self, document: Document, config: ClassifierConfig | None = None):
@@ -312,32 +312,40 @@ class Country(BaseProcessor):
         country_group_to_pages = country_group_extractor.process(docs)
         end_time_country_group = time.time()
 
-        logs_collector.add(f"Neural network found that trial country is likely to be {country_group_to_pages['prediction']}.")
+        logs_collector.add(
+            f"Neural network found that trial country is likely to be {country_group_to_pages['prediction']}.")
 
         start_time_int = time.time()
         is_international_to_pages = international_extractor.process(docs)
         end_time_int = time.time()
 
-        logs_collector.add(f"Neural network for is trial international? output: {is_international_to_pages['prediction']}.")
+        logs_collector.add(
+            f"Neural network for is trial international? output: {is_international_to_pages['prediction']}.")
 
         start_time_nb = time.time()
         is_international_nb_to_pages = international_extractor_nb.process(docs)
         end_time_nb = time.time()
 
-        logs_collector.add(f"Naive Bayes model for is trial international? output: {is_international_nb_to_pages['prediction']}.")
+        logs_collector.add(
+            f"Naive Bayes model for is trial international? output: {is_international_nb_to_pages['prediction']}.")
 
         start_time_ensemble = time.time()
         ensemble_to_pages = country_ensemble_extractor.process(
-            country_to_pages["features"], country_group_to_pages["probas"], is_international_to_pages["probas"], is_international_nb_to_pages["score"]
+            country_to_pages["features"], country_group_to_pages["probas"], is_international_to_pages["probas"],
+            is_international_nb_to_pages["score"]
         )
         end_time_ensemble = time.time()
 
         logs_collector.add(f"Ensemble model output: {json.dumps(ensemble_to_pages)}")
 
+        # is_lmic = len(LMIC_COUNTRIES.intersection(ensemble_to_pages["prediction"])) > 0
+
         country_to_pages["prediction"] = ensemble_to_pages["prediction"]
 
-        logs_collector.add(f"Time to run rule based country classifier: {end_time_rule_based - start_time_rule_based:.4f}")
-        logs_collector.add(f"Time to run country group classifier: {end_time_country_group - start_time_country_group:.4f}")
+        logs_collector.add(
+            f"Time to run rule based country classifier: {end_time_rule_based - start_time_rule_based:.4f}")
+        logs_collector.add(
+            f"Time to run country group classifier: {end_time_country_group - start_time_country_group:.4f}")
         logs_collector.add(f"Time to run int classifier: {end_time_int - start_time_int:.4f}")
         logs_collector.add(f"Time to run nb classifier: {end_time_nb - start_time_nb:.4f}")
         logs_collector.add(f"Time to run ensemble classifier: {end_time_ensemble - start_time_ensemble:.4f}")

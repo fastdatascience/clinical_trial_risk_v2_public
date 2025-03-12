@@ -5,5 +5,7 @@ recursive-include tests test*.py
 include *.cff
 include *.ipynb
 include requirements.txt
+include requirements-test.txt
 include *.py
 include *.sh
+include pytest.ini

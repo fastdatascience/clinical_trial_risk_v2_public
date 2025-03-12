@@ -23,6 +23,9 @@ os.environ["LOGURU_DEBUG_COLOR"] = "<fg #777>"
 
 __SERVER_VERSION = "1.4.0"
 
+# * NLTK
+NLTK_DATA_PATH = "/tmp/nltk_data"
+
 # * Redis config
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = os.getenv("REDIS_PORT")

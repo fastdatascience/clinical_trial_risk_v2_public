@@ -9,7 +9,7 @@ Usage:
     result = ct.run_all(document=parsed_document, parallel=True, file_buffer=file_contents)
 """
 
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 
 import argparse
 import inspect
@@ -198,9 +198,22 @@ class MetadataOption:
 class Metadata:
     id: str
     name: str
-    feature_type: Literal["yesno", "categorical", "numeric", "multi_label", "key_value_list", "numeric_range"]
+    feature_type: Literal[
+        "text",
+        "yesno",
+        "categorical",
+        "numeric",
+        "multiple_numeric",
+        "multi_label",
+        "key_value_list",
+        "numeric_range"
+    ]
     options: list[MetadataOption] | list[dict[str, str]] = field(default_factory=list)
     default_weights: dict[str, float] = field(default_factory=dict)
+
+    required_condition: str | None = field(default=None)  # The condition specific for this module
+    is_tertile: bool = field(default=False)  # If True, the tertile nodes will be created for the module
+    has_multiple_predictions: bool = field(default=False)  # If True, the prediction from the module is expected to be a dictionary with multiple prediction values
 
     def __post_init__(self):
         # * Ensure "cost" and "risk" are in default_weights with default values if not provided
@@ -213,6 +226,12 @@ class Metadata:
         return asdict(self)
 
     def get_description(self, selected_value):
+        if self.id == "gender":
+            genders = [x for x in self.options if x.value == selected_value]
+            if len(genders) > 0:
+                return genders[0].label
+            else:
+                return selected_value
         if self.feature_type in ["numeric", "yesno"] or self.id == "phase":
             return self.name
         if self.feature_type == "multi_label":

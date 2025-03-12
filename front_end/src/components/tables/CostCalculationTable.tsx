@@ -39,15 +39,71 @@ const CalculationTable = ({
     const [weightProfiles] = useAtom(weightProfilesAtom);
     const [, setModuleWeight] = useAtom(moduleWeightAtom);
     const [historyRunResult] = useAtom(historyRunResultAtom);
-
     const [tableData, setTableData] = useState<ITableRow[]>(data);
     const [filteredData, setFilteredData] = useState<ITableRow[]>(data);
-
     const [searchQuery, setSearchQuery] = useState<string>("");
-    const [selectedProfile, setSelectedProfile] = useState<string>("");
     const [sampleSize, setSampleSize] = useState<number>(1);
+    const [selectedWeightProfileName, setSelectedWeightProfileName] = useState<string>("");
+    const weightProfileOptions = generateDropdownOptions(weightProfiles);
 
-    const weight_profile_options = generateDropdownOptions(weightProfiles);
+    // Set the default weight profile as initially selected
+    useEffect(() => {
+        // Get the default weight profile
+        const defaultWeightProfile = weightProfiles?.find((weightProfile) => weightProfile.default);
+
+        if (defaultWeightProfile) {
+            // Set the default weight profile as selected
+            setSelectedWeightProfileName(defaultWeightProfile.name);
+        }
+    }, [setModuleWeight, weightProfiles]);
+    
+    // Get the selected weight profile risk thresholds
+    const selectedWeightProfileRiskThresholds = useMemo(()=> {
+        const selectedWeightProfile = weightProfiles?.find((weightProfile)=> {
+            return weightProfile.name === selectedWeightProfileName;
+        });
+
+        if (selectedWeightProfile?.weights.risk_thresholds?.low && selectedWeightProfile?.weights.risk_thresholds?.high) {
+            return {
+                "low": selectedWeightProfile.weights.risk_thresholds.low,
+                "high": selectedWeightProfile.weights.risk_thresholds.high
+            }
+        }
+        
+    }, [selectedWeightProfileName, weightProfiles]);
+
+    /**
+     * Handle switching of weight profile.
+     */
+    const handleSelectWeightProfile= useCallback((profile: string)=> {
+        setSelectedWeightProfileName(profile);
+        
+        const filteredWightProfiles = weightProfiles?.filter(
+            (_profile) => _profile.name === profile
+        );
+
+        const weights = filteredWightProfiles?.reduce((acc, currentProfile) => {
+            if (currentProfile?.weights?.cost_risk_models) {
+                return {
+                    ...acc,
+                    ...currentProfile.weights.cost_risk_models,
+                };
+            }
+            return acc;
+        }, {} as Weights);
+
+        setModuleWeight((prev) => ({
+            ...prev,
+            cost_risk_models: weights || {},
+        }));
+    }, [setModuleWeight, weightProfiles]);
+
+    // Trigger handleSelectWeightProfile when the selected weight profile has changed
+    useEffect(() => {
+        if (selectedWeightProfileName) {
+            handleSelectWeightProfile(selectedWeightProfileName);
+        }
+    }, [handleSelectWeightProfile, selectedWeightProfileName]);
 
     useEffect(() => {
         setTableData(data);
@@ -59,6 +115,22 @@ const CalculationTable = ({
             setSampleSize(Number(sampleSizeRow?.value) ?? 1);
         }
     }, [data]);
+
+    // Sum of scores = total cost per participants
+    const totalCostPerParticipant = useMemo(
+        () =>
+            filteredData.reduce(
+                (acc, row) => Number(acc) + Number(row.score),
+                0
+            ),
+        [filteredData]
+    );
+
+    // total cost per participants * sample size we get total costs
+    const totalCostOfTrial = useMemo(
+        () => totalCostPerParticipant * sampleSize,
+        [totalCostPerParticipant, sampleSize]
+    );
 
     let excelExportColumns: string[];
     if (isCostTable) {
@@ -146,10 +218,17 @@ const CalculationTable = ({
 
                 dataStartRow += 1;
             }
+            
+            // Keep track of which row contains sample_size
+            let sampleSizeRow: number | undefined = undefined
 
             // Data rows
             for (let i = 0; i < filteredData.length; i++) {
                 const currentRow = i + dataStartRow;
+                
+                if (!sampleSizeRow && filteredData[i].feature === "sample_size") {
+                    sampleSizeRow = currentRow;
+                }
 
                 const weightV = getValueAsNumber(filteredData[i].weight);
                 const weightT = typeof weightV === "number" ? "n" : "s";
@@ -180,52 +259,70 @@ const CalculationTable = ({
             }
 
             // Add total score row
-            if (!isCostTable) {
+            if (isCostTable) {
                 exportData.push({
-                    feature: {
-                        t: "s",
-                        v: "Total score (50-100=low risk, 0-40=high risk)",
-                    },
-                    value: { t: "s", v: "" },
-                    weight: { t: "s", v: "" },
-                    score: {
-                        t: "n",
-                        v: 0,
-                        f: `MAX(0,MIN(100,SUM(${scoreColumnLetter}${dataStartRow}:${scoreColumnLetter}${
-                            exportData.length + 1
-                        })))+RAND()*0`,
-                    },
-                });
-            } else {
-                exportData.push({
-                    feature: { t: "s", v: "Total score" },
+                    feature: { t: "s", v: "Total cost per participant" },
                     description: { t: "s", v: "" },
                     value: { t: "s", v: "" },
                     weight: { t: "s", v: "" },
                     score: {
                         t: "n",
-                        v: 0,
+                        v: totalCostPerParticipant,
                         f: `SUM(${scoreColumnLetter}${dataStartRow}:${scoreColumnLetter}${
                             exportData.length + 1
                         })+RAND()*0`,
                     },
                 });
+
+                let formulaTotalCostOfTrial = undefined
+                if (sampleSizeRow) {
+                    formulaTotalCostOfTrial = `(${valueColumnLetter}${sampleSizeRow}*${scoreColumnLetter}${exportData.length + 1})+RAND()*0`
+                }
+                exportData.push({
+                    feature: { t: "s", v: "Total cost of trial" },
+                    description: { t: "s", v: "" },
+                    value: { t: "s", v: "" },
+                    weight: { t: "s", v: "" },
+                    score: {
+                        t: "n",
+                        v: totalCostOfTrial,
+                        f: formulaTotalCostOfTrial,
+                    },
+                });
+            } else {
+                if (selectedWeightProfileRiskThresholds) {
+                    exportData.push({
+                        feature: {
+                            t: "s",
+                            v: `Total score (${selectedWeightProfileRiskThresholds.low}-100=low risk, 0-${selectedWeightProfileRiskThresholds.high}=high risk)`,
+                        },
+                        value: {t: "s", v: ""},
+                        weight: {t: "s", v: ""},
+                        score: {
+                            t: "n",
+                            v: 0,
+                            f: `MAX(0,MIN(100,SUM(${scoreColumnLetter}${dataStartRow}:${scoreColumnLetter}${
+                                exportData.length + 1
+                            })))+RAND()*0`,
+                        },
+                    });
+                }
             }
 
             // Add risk level row
-            if (!isCostTable) {
+            if (!isCostTable && selectedWeightProfileRiskThresholds) {
                 exportData.push({
-                    feature: { t: "s", v: "Risk level" },
-                    value: { t: "s", v: "" },
-                    weight: { t: "s", v: "" },
+                    feature: {t: "s", v: "Risk level"},
+                    value: {t: "s", v: ""},
+                    weight: {t: "s", v: ""},
                     score: {
                         t: "n",
                         v: 0,
                         f: `IF(${scoreColumnLetter}${
                             exportData.length + 1
-                        }<40,"HIGH",IF(${scoreColumnLetter}${
+                        }<${selectedWeightProfileRiskThresholds.high},"HIGH",IF(${scoreColumnLetter}${
                             exportData.length + 1
-                        }<50,"MEDIUM","LOW"))`,
+                        }<${selectedWeightProfileRiskThresholds.low},"MEDIUM","LOW"))`,
                     },
                 });
             }
@@ -240,6 +337,9 @@ const CalculationTable = ({
         excelExportColumns,
         originalDocumentName,
         condition,
+        totalCostOfTrial,
+        totalCostPerParticipant,
+        selectedWeightProfileRiskThresholds,
     ]);
 
     /* 
@@ -263,22 +363,6 @@ const CalculationTable = ({
             });
         },
         []
-    );
-
-    // Sum of scores = total cost per participants
-    const totalCostPerParticipant = useMemo(
-        () =>
-            filteredData.reduce(
-                (acc, row) => Number(acc) + Number(row.score),
-                0
-            ),
-        [filteredData]
-    );
-
-    // total cost per participants * sample size we get total costs
-    const totalCostOfTrial = useMemo(
-        () => totalCostPerParticipant * sampleSize,
-        [totalCostPerParticipant, sampleSize]
     );
 
     // Determining the Risk level based on score
@@ -308,28 +392,6 @@ const CalculationTable = ({
 
         // Update table data with filtered data
         setFilteredData(filteredData);
-    };
-
-    const handleSelectWeightProfile = (profile: string) => {
-        setSelectedProfile(profile);
-        const filteredWightProfiles = weightProfiles?.filter(
-            (_profile) => _profile.name === profile
-        );
-
-        const weights = filteredWightProfiles?.reduce((acc, currentProfile) => {
-            if (currentProfile?.weights?.cost_risk_models) {
-                return {
-                    ...acc,
-                    ...currentProfile.weights.cost_risk_models,
-                };
-            }
-            return acc;
-        }, {} as Weights);
-
-        setModuleWeight((prev) => ({
-            ...prev,
-            cost_risk_models: weights || {},
-        }));
     };
 
     return (
@@ -370,17 +432,10 @@ const CalculationTable = ({
 
                     <div className="md:w-64 md:flex md:justify-end md:items-center w-full ">
                         <SelectInput
-                            value={
-                                selectedProfile ||
-                                weightProfiles?.find(
-                                    (profile) => !profile.default
-                                )?.name
-                            }
+                            value={selectedWeightProfileName}
                             placeholder={"Select weight profile..."}
-                            options={weight_profile_options}
-                            onChange={(value) =>
-                                handleSelectWeightProfile(value)
-                            }
+                            options={weightProfileOptions}
+                            onChange={(value) => handleSelectWeightProfile(value)}
                         />
                     </div>
                 </div>
@@ -448,7 +503,15 @@ const CalculationTable = ({
                                           )
                                         : Math.trunc(totalCostPerParticipant)}
                                 </span>{" "}
-                                (50-100=low risk, 0-40=high risk)
+                                <span>(40-100=low risk, 0-30=high risk)</span>
+
+                                {/* TODO: Dynamically display the thresholds here (uncomment the code below) when we get the total score and risk level to also change when the selected weight profile in the dropdown changes. */}
+                                {/*{selectedWeightProfileRiskThresholds && */}
+                                {/*    <span>*/}
+                                {/*        ({selectedWeightProfileRiskThresholds.low}-100=low risk, 0-{selectedWeightProfileRiskThresholds.high}=high risk)*/}
+                                {/*    </span> */}
+                                {/*}*/}
+                                
                             </Typography>
                         </div>
                     )}

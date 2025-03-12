@@ -379,7 +379,7 @@ class SampleSize(BaseProcessor):
     @property
     def metadata(self) -> Metadata:
         return Metadata(id="sample_size", name="Number of subjects", feature_type="numeric",
-                        default_weights={"cost": 0.0, "risk": 0.0},
+                        default_weights={"cost": 0.0, "risk": 0.0}, is_tertile=True
                         )
 
     def process(self, document: Document, config: ClassifierConfig | None = None):

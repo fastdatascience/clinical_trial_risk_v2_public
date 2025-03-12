@@ -167,7 +167,7 @@ class Duration(BaseProcessor):
 
     @property
     def metadata(self) -> Metadata:
-        return Metadata(id="duration", name="Duration in years", feature_type="numeric", )
+        return Metadata(id="duration", name="Duration in years", feature_type="numeric", is_tertile=True)
 
     def process(self, document: Document, config: ClassifierConfig | None = None):
 

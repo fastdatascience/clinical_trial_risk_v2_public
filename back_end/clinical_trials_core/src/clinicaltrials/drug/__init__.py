@@ -16,7 +16,7 @@ class Drug(BaseProcessor):
 
     @property
     def metadata(self) -> Metadata:
-        return Metadata(id="drug", name="Drug", feature_type="text", )
+        return Metadata(id="drug", name="Drug", feature_type="text")
 
     def process(self, document: Document, config: ClassifierConfig | None = None):
         config = self.get_classifier_config_or_default(config=config)

@@ -21,7 +21,6 @@ for pattern_name, pattern_surface_forms in patterns.items():
     phrase_matcher.add(pattern_name, nlp.pipe(pattern_surface_forms))
 
 
-
 class Gender(BaseProcessor):
     def __init__(self) -> None:
         super().__init__(module_name=__class__.__name__)
@@ -30,9 +29,16 @@ class Gender(BaseProcessor):
 
     @property
     def metadata(self) -> Metadata:
-        return Metadata(id="gender", name="Gender", feature_type="categorical",
-                        options=[MetadataOption(label="none", value="none"), MetadataOption(label="male", value="male"),
-                                 MetadataOption(label="female", value="female"), ])
+        return Metadata(
+            id="gender",
+            name="Gender",
+            feature_type="categorical",
+            options=[
+                MetadataOption(label="none", value=0),
+                MetadataOption(label="male", value=1),
+                MetadataOption(label="female", value=2),
+            ]
+        )
 
     def process(self, document: Document, config: ClassifierConfig | None = None):
         config = self.get_classifier_config_or_default(config=config)

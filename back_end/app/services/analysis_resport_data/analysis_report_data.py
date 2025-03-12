@@ -15,8 +15,7 @@ from spacy.tokens import Doc as SpacyDoc
 
 from app import schemas, services, utils
 from app.models.document.document import Document
-from app.models.weight_profile.base import WeightProfileBase
-from app.services.transform import CTNode
+from clinicaltrials import schemas as ct_schemas
 
 
 class HeatMapResult(BaseModel):
@@ -33,9 +32,9 @@ class AnalysisReportData:
         tokenised_pages: list[SpacyDoc],
         user_resource_usage_result: dict,
         trial_risk_score: tuple[float, str],
-        ct_cost_nodes: list[CTNode],
-        ct_risk_nodes: list[CTNode],
-        weights: WeightProfileBase,
+        ct_cost_nodes: list[ct_schemas.CTNode],
+        ct_risk_nodes: list[ct_schemas.CTNode],
+        weights: ct_schemas.WeightProfileBase,
         logs: OrderedDict[str, list[str]],
         analysis_run_time: float = None,
     ):
@@ -81,7 +80,10 @@ class AnalysisReportData:
         self.__risk_threshold = weights.risk_thresholds
 
         # Tertiles data
-        self.__tertiles_data_transformed = self.__tertile_data_transformed(sample_size_tertiles=weights.to_serializable_sample_size_tertiles())
+        # TODO: Add other tertiles
+        self.__tertiles_data_transformed = self.__tertile_data_transformed(
+            sample_size_tertiles=weights.to_serializable_tertiles()["sample_size_tertiles"]
+        )
 
         # List of page numbers
         self.__page_numbers = list(range(1, 1 + len(self.__tokenised_pages)))

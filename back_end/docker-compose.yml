@@ -14,6 +14,7 @@ services:
             - "5000:5000"
         volumes:
             - storage:/tmp/storage
+            - nltk_data:/tmp/nltk_data
         env_file:
             - .env
         depends_on:
@@ -77,6 +78,7 @@ services:
         command: celery -b "redis://redis:6379" -A app.ct_core worker --concurrency=5 -l info
         volumes:
             - storage:/tmp/storage
+            - nltk_data:/tmp/nltk_data
         healthcheck:
             test: [ "CMD-SHELL", "celery -b redis://redis:6379 inspect ping --destination celery@$$HOSTNAME" ]
             interval: 30s
@@ -94,6 +96,7 @@ services:
         command: celery -b "redis://redis:6379" -A app.ct_core beat -l info -s /tmp/celerybeat-schedule
         volumes:
             - storage:/tmp/storage
+            - nltk_data:/tmp/nltk_data
         depends_on:
             redis:
                 condition: service_healthy
@@ -102,4 +105,5 @@ services:
 
 volumes:
     postgres_data:
+    nltk_data:
     storage:

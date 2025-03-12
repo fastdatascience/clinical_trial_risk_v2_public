@@ -15,6 +15,7 @@ import {
     CostRiskModel,
     NestedCostRiskModel,
     SetAtom,
+    TertilesClass,
     Weights,
 } from "../../utils/types";
 import { SetStateAction, useState } from "react";
@@ -24,7 +25,8 @@ import {
     createUserWeightProfiles,
     updateUserWeightProfile,
 } from "../../utils/services";
-import { updateNestedProperty } from "../../utils/utils";
+import { generateOptions, updateNestedProperty } from "../../utils/utils";
+import SelectInput from "../common/SelectInput";
 
 type WeightType = keyof Weights;
 
@@ -53,6 +55,9 @@ export function WeightConfigureTable({
     const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>(
         {}
     );
+    const [selectedTertile, setSelectedTertile] = useState<keyof TertilesClass>(
+        "sample_size_tertiles"
+    );
     const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
 
     const toggleRow = (feature: string) => {
@@ -68,8 +73,7 @@ export function WeightConfigureTable({
         feature: string,
         weights: Weights
     ) => {
-        const { cost_risk_models, risk_thresholds, sample_size_tertiles } =
-            weights;
+        const { cost_risk_models, risk_thresholds, tertiles } = weights;
 
         const updatedCostRiskModels = {
             ...cost_risk_models,
@@ -85,7 +89,7 @@ export function WeightConfigureTable({
             weights: {
                 cost_risk_models: updatedCostRiskModels,
                 risk_thresholds,
-                sample_size_tertiles,
+                tertiles,
             },
         };
 
@@ -200,7 +204,7 @@ export function WeightConfigureTable({
         }
     };
 
-    // TODO: the update function will be different for this one
+    // TODO: the update function will be different for this one, also add key to identify tertile weights.tertiles[key]
     const handleSSTChange = (
         profileIndex: number,
         sstIndex: number,
@@ -214,19 +218,24 @@ export function WeightConfigureTable({
             const profile = updatedProfiles[profileIndex];
 
             if (
-                profile?.weights?.sample_size_tertiles &&
-                profile.weights.sample_size_tertiles[sstIndex]
+                profile?.weights?.tertiles?.[selectedTertile] &&
+                profile.weights.tertiles?.[selectedTertile][sstIndex]
             ) {
                 const updatedTertile = {
-                    ...profile.weights.sample_size_tertiles[sstIndex],
+                    ...profile.weights.tertiles[selectedTertile][sstIndex],
                     [sstType]: value && parseFloat(value),
                 };
 
                 // Replace the updated sst in the sample_size_tertiles array
-                profile.weights.sample_size_tertiles = [
-                    ...profile.weights.sample_size_tertiles.slice(0, sstIndex),
+                profile.weights.tertiles[selectedTertile] = [
+                    ...profile.weights.tertiles[selectedTertile].slice(
+                        0,
+                        sstIndex
+                    ),
                     updatedTertile,
-                    ...profile.weights.sample_size_tertiles.slice(sstIndex + 1),
+                    ...profile.weights.tertiles[selectedTertile].slice(
+                        sstIndex + 1
+                    ),
                 ];
             }
 
@@ -542,9 +551,9 @@ export function WeightConfigureTable({
         isUpdating: Record<string, boolean>,
         isDefault: boolean
     ) => {
-        const { sample_size_tertiles } = weights;
-        return sample_size_tertiles?.map((sst, index) => {
-            const isLast = index === sample_size_tertiles?.length - 1;
+        const { tertiles } = weights;
+        return tertiles?.[selectedTertile]?.map((sst, index) => {
+            const isLast = index === tertiles[selectedTertile]?.length - 1;
             const rowClass = isLast
                 ? "p-4"
                 : "p-4 border-b border-blue-gray-50";
@@ -669,23 +678,46 @@ export function WeightConfigureTable({
                                             colSpan={columns.length}
                                             className="p-4 border-b  bg-gray-50 font-bold "
                                         >
-                                            <div className="w-full md:w-96">
-                                                <Input
-                                                    label={
-                                                        "Weight Profile Name"
-                                                    }
-                                                    color="teal"
-                                                    crossOrigin={undefined}
-                                                    value={name}
-                                                    onChange={(e) =>
-                                                        handleCRMWeightChange(
-                                                            profileIndex,
-                                                            "",
-                                                            "name",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
+                                            <div className="flex flex-wrap justify-between items-center">
+                                                <div className="w-full md:w-96 ">
+                                                    <Input
+                                                        label={
+                                                            "Weight Profile Name"
+                                                        }
+                                                        color="teal"
+                                                        crossOrigin={undefined}
+                                                        value={name}
+                                                        onChange={(e) =>
+                                                            handleCRMWeightChange(
+                                                                profileIndex,
+                                                                "",
+                                                                "name",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+
+                                                {weightKey === "tertiles" && (
+                                                    <div className="w-full md:w-96">
+                                                        <SelectInput
+                                                            value={
+                                                                selectedTertile
+                                                            }
+                                                            placeholder="Choose a Tertile..."
+                                                            options={generateOptions(
+                                                                Object.keys(
+                                                                    weights.tertiles!
+                                                                )
+                                                            )}
+                                                            onChange={(value) =>
+                                                                setSelectedTertile(
+                                                                    value as keyof TertilesClass
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

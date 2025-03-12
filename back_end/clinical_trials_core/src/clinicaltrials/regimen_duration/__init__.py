@@ -28,7 +28,12 @@ class RegimenDuration(BaseProcessor):
 
     @property
     def metadata(self) -> Metadata:
-        return Metadata(id="regimen_duration", name="Regimen duration is open", feature_type="numeric", )
+        return Metadata(
+            id="regimen_duration",
+            name="Regimen duration is open",
+            feature_type="multiple_numeric",
+            has_multiple_predictions=True,
+        )
 
     def process(self, document: Document, config: ClassifierConfig | None = None):
         candidates = []

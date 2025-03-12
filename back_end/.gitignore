@@ -224,5 +224,5 @@ venv.bak/
 # GitHub Actions secrets
 .secrets
 
-# NLTK
-nltk_data/
+models/
+demo_user_data/

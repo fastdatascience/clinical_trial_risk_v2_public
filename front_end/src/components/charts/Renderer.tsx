@@ -125,7 +125,7 @@ export const Renderer = ({
     });
 
     return (
-        <svg width={width} height={height}>
+        <svg width={width} height={height} className="w-full">
             <g
                 width={boundsWidth}
                 height={boundsHeight}

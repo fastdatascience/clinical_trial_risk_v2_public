@@ -184,7 +184,11 @@ export const getRunStatus = async (
                 setRunLog(run_log);
                 const integerProgress = Math.trunc(completion);
 
-                setUploadProgress(integerProgress);
+                // because we are showing progress 10% initially, so update progress state when it's > 10
+                if (integerProgress > 10) {
+                    console.log("integerProgress in if===>", integerProgress);
+                    setUploadProgress(integerProgress);
+                }
                 onProgress({ ...parsedUserResourceUsage });
             },
 
@@ -444,12 +448,13 @@ export const getWeightProfiles = async (
     }
 };
 
+// TODO: update here asa well
 export const createUserWeightProfiles = async (
     weight_profile: IWeightProfile
 ): Promise<Content> => {
     const {
         name,
-        weights: { cost_risk_models, risk_thresholds, sample_size_tertiles },
+        weights: { cost_risk_models, risk_thresholds, tertiles },
     } = weight_profile;
     const response = await network().post<ServerResponseV1<Content>>(
         `/${API_V1}/weight-profiles/users`,
@@ -457,7 +462,7 @@ export const createUserWeightProfiles = async (
             name,
             cost_risk_models,
             risk_thresholds,
-            sample_size_tertiles,
+            tertiles,
         }
     );
 

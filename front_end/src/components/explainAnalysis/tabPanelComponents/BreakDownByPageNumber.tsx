@@ -19,6 +19,10 @@ import {
     DecisionForDrug,
     DecisionForCohortSize,
     DecisionForVaccine,
+    DecisionForConsent,
+    DecisionForControlNegative,
+    DecisionForDesign,
+    DecisionForDocumentType,
 } from "../../analysis-decisions";
 import { Result } from "../../../utils/types";
 import { generateOptions } from "../../../utils/utils";
@@ -141,13 +145,37 @@ const BreakDownByPageNumber: React.FC<Result> = (props) => {
                 vaccine={props?.vaccine ?? historyRunResult?.result?.vaccine}
             />
         ),
+        consent: (
+            <DecisionForConsent
+                consent={props?.consent ?? historyRunResult?.result?.consent}
+            />
+        ),
+        control_negative: (
+            <DecisionForControlNegative
+                control_negative={
+                    props?.control_negative ??
+                    historyRunResult?.result?.control_negative
+                }
+            />
+        ),
+        design: (
+            <DecisionForDesign
+                design={props?.design ?? historyRunResult?.result?.design}
+            />
+        ),
+        document_type: (
+            <DecisionForDocumentType
+                document_type={
+                    props?.document_type ??
+                    historyRunResult?.result?.document_type
+                }
+            />
+        ),
     };
 
     const renderComponentBasedOnParam = () => {
         return paramComponentMap[selectedFeature] || null;
     };
-
-    console.log("result===>", historyRunResult?.result);
 
     return (
         <div className="flex flex-col gap-3 justify-between font-poppins space-y-5 mt-5  items-start flex-wrap">

@@ -145,7 +145,7 @@ const Dropzone = () => {
                 setTimeout(() => {
                     setIsFileProcessing(false);
                     setShowPdfViewer(true);
-                    setUploadProgress(0);
+                    setUploadProgress(10);
                 }, 1000);
                 break;
         }

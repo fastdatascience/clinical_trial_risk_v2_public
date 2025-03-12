@@ -1,12 +1,14 @@
+import os
 import pathlib
 import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from functools import wraps
 from time import time
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable
 from uuid import uuid4
 
+import nltk
 import clinicaltrials.core as ct_core
 import grpc
 from clinicaltrials.core import ClinicalTrial
@@ -66,17 +68,46 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
 
 
 async def startup(app: FastAPI) -> None:
+    redis = get_redis_async()
+
+    # Download NLTK data (stopwords)
+    redis_key_nltk_data_downloaded = "nltk_data_downloaded"
+    nltk_data_downloaded_lock_acquired = await redis.set(
+        name=redis_key_nltk_data_downloaded,
+        value=1,
+        nx=True,
+        ex=30,
+    )
+    if nltk_data_downloaded_lock_acquired:
+        try:
+            if not os.path.isdir(config.NLTK_DATA_PATH):
+                os.makedirs(config.NLTK_DATA_PATH)
+            nltk.data.path.append(config.NLTK_DATA_PATH)
+            nltk.download("stopwords", download_dir=config.NLTK_DATA_PATH)
+            logger.info(f"NLTK data downloaded to {config.NLTK_DATA_PATH}.")
+        except (Exception,) as e:
+            logger.error(f"Could not download NLTK data: {str(e)}")
+
+    # Insert database defaults
     if not config.DEVELOPMENT:
-        # Create extensions
-        logger.info("Creating extensions, will not attempt to recreate extensions already present in the target database.")
-        db_create_all_extensions()
+        redis_key_database_defaults_inserted = "database_defaults_inserted"
+        database_defaults_inserted_lock_acquired = await redis.set(
+            name=redis_key_database_defaults_inserted,
+            value=1,
+            nx=True,
+            ex=30,
+        )
+        if database_defaults_inserted_lock_acquired:
+            # Create extensions
+            logger.info("Creating extensions, will not attempt to recreate extensions already present in the target database.")
+            db_create_all_extensions()
 
-        # Create tables
-        logger.info("Creating tables found in SQLModel.metadata, will not attempt to recreate tables already present in the target database.")
-        SQLModel.metadata.create_all(engine)
+            # Create tables
+            logger.info("Creating tables found in SQLModel.metadata, will not attempt to recreate tables already present in the target database.")
+            SQLModel.metadata.create_all(engine)
 
-        # Insert default data into tables
-        db_insert_all_default_data()
+            # Insert default data into tables
+            db_insert_all_default_data()
 
     show_config()
 

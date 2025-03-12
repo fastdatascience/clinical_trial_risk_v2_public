@@ -26,6 +26,14 @@ class Condition(BaseProcessor):
                                  MetadataOption(label="Polio", value="POL"),
                                  MetadataOption(label="Diabetes", value="DIABETES"),
                                  MetadataOption(label="Pneumonia", value="PNE"),
+                                 MetadataOption(label="Hypertension (see full product)", value="HYPERTENSION"),
+                                 MetadataOption(label="Motor neurone disease (see full product)", value="MND"),
+                                 MetadataOption(label="Multiple sclerosis (see full product)", value="MS"),
+                                 MetadataOption(label="Obesity (see full product)", value="OBESITY"),
+                                 MetadataOption(label="Sickle cell anemia (see full product)", value="SICKLE"),
+                                 MetadataOption(label="Stroke (see full product)", value="STROKE"),
+                                 MetadataOption(label="Cystic fibrosis (see full product)", value="CF"),
+                                 MetadataOption(label="Cancer (see full product)", value="CANCER"),
                                  MetadataOption(label="Other (see full product)", value="other"), ])
 
     def process(self, document: Document, config: ClassifierConfig | None = None):

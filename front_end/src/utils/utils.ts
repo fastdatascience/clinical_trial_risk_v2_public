@@ -242,8 +242,12 @@ export const generateDropdownOptions = (
     }));
 };
 
-// Using this for now (TODO: make it scalable later)
-export const generateOptions = (data: string[]): Option[] => {
+interface OptionType<T> {
+    label: T;
+    value: T;
+}
+
+export const generateOptions = <T>(data: T[]): OptionType<T>[] => {
     return data?.map((content) => ({
         label: content,
         value: content,
@@ -487,6 +491,44 @@ export const transformDataForTable = (
     });
 };
 
+/**
+ * Check if value is numeric.
+ */
 export function isNumeric(value: string) {
     return /^-?\d+(\.\d+)?$/.test(value);
+}
+
+/**
+ * Merge Tailwind CSS classes.
+ *
+ * @param classes Tailwind CSS classes.
+ */
+export function classNames(...classes: string[]) {
+    return classes.filter(Boolean).join(" ");
+}
+
+/**
+ * Capitalize first letter.
+ */
+export function capitalizeFirstLetter(value: string) {
+    return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+}
+
+/**
+ * Text formatter.
+ */
+export function textFormatter(
+    value: string,
+    options: { capitalizeFirstLetter?: boolean; clearUnderscores?: boolean; },
+) {
+    
+    if (options.clearUnderscores === true) {
+        value = value.replace(/_/g, " ")
+    }
+    
+    if (options.capitalizeFirstLetter === true) {
+        value = capitalizeFirstLetter(value)
+    }
+    
+    return value
 }

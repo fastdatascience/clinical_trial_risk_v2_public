@@ -91,6 +91,7 @@ export interface InputProps {
     min?: number;
     max?: number;
     onBlur?: React.FocusEventHandler<HTMLInputElement> | undefined;
+    disabled?: boolean;
 }
 
 export interface IModalProps {
@@ -216,27 +217,6 @@ export type RendererProps = {
     data: { x: string; y: string; value: number }[];
     setHoveredCell: (hoveredCell: InteractionData | null) => void;
 };
-
-export interface DimensionObject {
-    width: number;
-    height: number;
-    top: number;
-    left: number;
-    x: number;
-    y: number;
-    right: number;
-    bottom: number;
-}
-
-export type UseDimensionsHook = [
-    (node: HTMLElement) => void,
-    {} | DimensionObject,
-    HTMLElement
-];
-
-export interface UseDimensionsArgs {
-    liveMeasure?: boolean;
-}
 
 export interface ServerResponseV1<T> {
     timestamp: number;
@@ -855,6 +835,7 @@ export interface SelectInputProps {
     placeholder: string;
     options: Option[] | undefined;
     value?: string | number | string[];
+    disabled?: boolean;
     onChange: (value: string) => void;
 }
 
@@ -929,7 +910,8 @@ export interface Metadata {
     name: string;
     feature_type: string;
     options: Option[];
-    prediction?: number;
+    prediction?: number | string;
+    required_condition: string | null;
     default_weights: IModuleWeight;
 }
 
@@ -960,9 +942,9 @@ export interface ITableRow {
 }
 
 export interface ISheetJsTableCell {
-    t: string
-    v: string | number | undefined
-    f?: string
+    t: string;
+    v: string | number | undefined;
+    f?: string;
 }
 
 export interface ITableRowWithCellObj {
@@ -1003,10 +985,17 @@ export interface NestedCostRiskModel {
 
 export interface Weights {
     cost_risk_models: Record<string, CostRiskModel | NestedCostRiskModel>;
-    sample_size_tertiles?: SampleSizeTertile[];
+    tertiles?: TertilesClass;
     risk_thresholds?: RiskThresholds;
 }
 
+export interface TertilesClass {
+    recency_tertiles: Tertile[];
+    duration_tertiles: Tertile[];
+    num_sites_tertiles: Tertile[];
+    num_visits_tertiles: Tertile[];
+    sample_size_tertiles: Tertile[];
+}
 export interface CostRiskModel {
     cost?: number;
     risk?: number;
@@ -1017,7 +1006,7 @@ export interface RiskThresholds {
     high: number;
 }
 
-export interface SampleSizeTertile {
+export interface Tertile {
     condition: ConditionType;
     phase: number | ConditionType;
     lower_tertile: number;

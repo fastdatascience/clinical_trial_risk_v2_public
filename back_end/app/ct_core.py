@@ -7,14 +7,13 @@ import numpy as np
 from celery.signals import worker_process_init
 
 from app.helpers import create_analysis_report_data_and_upload_to_storage, extract_logs_for_analysis_report
-from app.models.document.document import Document
 from app.models.document.repo import get_a_document_by_id
 from app.models.user.base import User
-from app.models.weight_profile.base import WeightProfileBase
 from app.models.weight_profile.repo import get_a_weight_profile_for_user_or_default
 from app.services.storage_provider import StorageProvider
-from app.services.transform import transform_data_for_rac
 from app.utils import get_file_extension, remove_file_extension
+from clinicaltrials.schemas import WeightProfileBase
+from clinicaltrials.transform import create_rac_nodes
 
 try:
     # * Try importing the package normally
@@ -236,10 +235,10 @@ def init_document_process(document_dict: dict):
             weight_profile = get_a_weight_profile_for_user_or_default(session=session, user=db_user)
 
             # Get CT nodes
-            ct_cost_nodes, ct_risk_nodes = transform_data_for_rac(
+            ct_cost_nodes, ct_risk_nodes = create_rac_nodes(
                 metadata=ct.metadata,
                 result=user_resource_usage.result,
-                module_weight=weight_profile,
+                weight_profile_base=WeightProfileBase(**weight_profile.weights),
                 selected_param={},
             )
 

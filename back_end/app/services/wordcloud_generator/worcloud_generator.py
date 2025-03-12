@@ -1,47 +1,40 @@
-import nltk
-import time
-import re
-import io
 import bz2
+import io
 import operator
 import pickle as pkl
+import re
+import time
 from collections import Counter
 
-from wordcloud import WordCloud
+import nltk
 from PIL import Image
+from nltk import corpus
 from spacy.tokens import Doc
+from wordcloud import WordCloud
 
-from app import utils
+from app import utils, config
 
-# Download stopwords before importing NLTK stopwords
-nltk.download("stopwords", download_dir="/tmp/nltk_data")
-nltk.data.path.append("/tmp/nltk_data")
-
-from nltk.corpus import stopwords
-
-# Stopwords
-stops = set(stopwords.words("english")).union(set(stopwords.words("french")))
-stops.update(
-    [
-        "protocol",
-        "protocols",
-        "subject",
-        "subjects",
-        "trial",
-        "trials",
-        "doctor",
-        "doctors",
-        "eg",
-        "get",
-        "getting",
-        "got",
-        "gotten",
-        "rx",
-    ]
-)
+nltk.data.path.append(config.NLTK_DATA_PATH)
 
 MAX_NUM_WORDS = 100
 WORDCLOUD_TOKEN_REGEX = re.compile(r"(?i)^([a-z][a-z]+)$")
+
+extra_stopwords = [
+    "protocol",
+    "protocols",
+    "subject",
+    "subjects",
+    "trial",
+    "trials",
+    "doctor",
+    "doctors",
+    "eg",
+    "get",
+    "getting",
+    "got",
+    "gotten",
+    "rx",
+]
 
 
 class WordcloudGenerator:
@@ -70,6 +63,10 @@ class WordcloudGenerator:
         :param condition_to_pages: Needed to identify which terms contributed to the decision of the pathology.
         :returns: A dict response e.g. {"wordcloud_base64": ..., "log": ...}.
         """
+
+        # Stopwords
+        stopwords = set(corpus.stopwords.words("english")).union(set(corpus.stopwords.words("french")))
+        stopwords.update(extra_stopwords)
 
         def condition_colour_func(
             word: str,
@@ -100,7 +97,7 @@ class WordcloudGenerator:
                 token_text = token.text
                 if WORDCLOUD_TOKEN_REGEX.match(token_text):
                     tl = token_text.lower()
-                    if tl in stops:
+                    if tl in stopwords:
                         continue
                     unique_tokens_on_page.add(tl)
                     tfs[tl] += 1

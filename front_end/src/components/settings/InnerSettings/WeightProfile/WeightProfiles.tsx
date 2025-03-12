@@ -82,7 +82,7 @@ const WeightProfiles: React.FC = () => {
                 </p>
             </div>
 
-            {/* 3 Tabs here an each tab will have it's own component */}
+            {/* 3 Tabs here and each tab will have it's own component */}
             {isLoading && !!weightProfiles?.length ? (
                 <div className="flex justify-center items-center">
                     <Spinner color="green" className="h-20 w-20" />

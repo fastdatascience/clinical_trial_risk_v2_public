@@ -8,13 +8,12 @@ from typing import cast
 from uuid import uuid4
 
 import orjson
-from clinicaltrials.core import Metadata as ClinicalTrialMetadata
 from fastapi import APIRouter, Depends, File, Header, Query, UploadFile
 from fastapi.responses import Response, StreamingResponse
 from redis.asyncio import Redis as RedisAsync
 from sqlmodel import Session, col, func, select
 
-from app.config import BUCKET_OR_CONTAINER_NAME, MAX_DEMO_ACCOUNT_FILE_PROCESSING_COUNT, STORAGE_PROVIDER
+from app.config import BUCKET_OR_CONTAINER_NAME, MAX_DEMO_ACCOUNT_FILE_PROCESSING_COUNT
 from app.ct_core import init_document_process, map_document_parser_response_to_ct_document
 from app.database import paginate
 from app.grpc_client.document_parser import process_document
@@ -34,11 +33,13 @@ from app.models.subscription.subscription_type import SubscriptionType
 from app.models.user.base import User, UserWithRoles
 from app.models.user.repo import get_user_resource_usage_in_resource_ids
 from app.models.user.role import RoleEnum
-from app.models.user.user_resource_usage import ResourceType, ResourceTypeName, UserResourceUsage, UserResourceUsageStatus
+from app.models.user.user_resource_usage import ResourceType, ResourceTypeName, UserResourceUsage, \
+    UserResourceUsageStatus
 from app.models.user.user_subscription import UserSubscription
 from app.models.vm import DocumentQueueItem
-from app.models.weight_profile.base import DocumentRunWeightProfile, WeightProfileBase
-from app.models.weight_profile.repo import get_a_weight_profile_for_user_by_id_or_default, get_a_weight_profile_for_user_or_default, get_default_weight_profiles
+from app.models.weight_profile.base import DocumentRunWeightProfile
+from app.models.weight_profile.repo import get_a_weight_profile_for_user_by_id_or_default, \
+    get_a_weight_profile_for_user_or_default, get_default_weight_profiles
 from app.resources import (
     create_or_update_tag_counter,
     dep_get_user_document_by_id,
@@ -56,7 +57,6 @@ from app.security import decode_sha256
 from app.services import PdfGenerator
 from app.services.pdf_generator.pdf_generator import PDF_GENERATOR_AVAILABLE, WKHTMLTOPDF_IO_ERROR_MESSAGE
 from app.services.storage_provider import StorageProvider
-from app.services.transform import get_total_trial_cost, get_trial_risk_score, transform_data_for_rac
 from app.utils import (
     calculate_processing_time_limit,
     create_analysis_report_file_storage_key,
@@ -64,6 +64,9 @@ from app.utils import (
     get_number_of_pages_from_pdf,
     remove_file_extension,
 )
+from clinicaltrials.core import Metadata as ClinicalTrialMetadata
+from clinicaltrials.transform import get_total_trial_cost, get_trial_risk_score, create_rac_nodes
+from clinicaltrials.schemas import WeightProfileBase
 
 router = APIRouter()
 
@@ -90,6 +93,7 @@ async def get_documents(
     usage_dict: dict[int, UserResourceUsage] = {usage.resource_id: usage for usage in user_resource_usages if usage.resource_id is not None}
 
     weight_profile = get_a_weight_profile_for_user_by_id_or_default(session=session, user=user.user, weight_profile_id=weight_profile_id)
+    weight_profile_base = WeightProfileBase(**weight_profile.weights)
 
     document_buffer = []
     for document in paginated_documents.contents:
@@ -105,9 +109,17 @@ async def get_documents(
             )
             continue
 
-        cost_nodes, risk_nodes = transform_data_for_rac(metadata=metadata, result=user_resource_usage.result, module_weight=weight_profile, selected_param={})
-        total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes, module_weight=weight_profile)
-        trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(ct_node=risk_nodes, module_weight=weight_profile)
+        cost_nodes, risk_nodes = create_rac_nodes(
+            metadata=metadata,
+            result=user_resource_usage.result,
+            weight_profile_base=weight_profile_base,
+            selected_param={}
+        )
+        total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes)
+        trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(
+            ct_node=risk_nodes,
+            weight_profile_base=weight_profile_base,
+        )
 
         document_buffer.append(
             {
@@ -349,10 +361,18 @@ async def get_document_process_run_status(
             if run_completed and user_resource_usage.result is not None:
                 # * Get weight profile
                 weight_profile = get_a_weight_profile_for_user_or_default(session=session, user=user.user)
+                weight_profile_base = WeightProfileBase(**weight_profile.weights)
 
-                cost_nodes, risk_nodes = transform_data_for_rac(metadata=metadata, result=user_resource_usage.result, module_weight=weight_profile, selected_param={})
-                total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes, module_weight=weight_profile)
-                trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(ct_node=risk_nodes, module_weight=weight_profile)
+                cost_nodes, risk_nodes = create_rac_nodes(
+                    metadata=metadata,
+                    result=user_resource_usage.result,
+                    weight_profile_base=weight_profile_base,
+                    selected_param={}
+                )
+                total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes)
+                trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(
+                    ct_node=risk_nodes, weight_profile_base=weight_profile_base,
+                )
 
                 completed_data = {
                     **data,
@@ -385,10 +405,19 @@ async def get_document_process_run_status(
 
         # * Get weight profile
         weight_profile = get_a_weight_profile_for_user_by_id_or_default(session=session, user=user.user, weight_profile_id=weight_profile_id)
+        weight_profile_base = WeightProfileBase(**weight_profile.weights)
 
-        cost_nodes, risk_nodes = transform_data_for_rac(metadata=metadata, result=user_resource_usage.result, module_weight=weight_profile, selected_param={})
-        total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes, module_weight=weight_profile)
-        trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(ct_node=risk_nodes, module_weight=weight_profile)
+        cost_nodes, risk_nodes = create_rac_nodes(
+            metadata=metadata,
+            result=user_resource_usage.result,
+            weight_profile_base=weight_profile_base,
+            selected_param={}
+        )
+        total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes)
+        trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(
+            ct_node=risk_nodes,
+            weight_profile_base=weight_profile_base,
+        )
 
         return ServerResponse(
             data={
@@ -437,10 +466,18 @@ async def get_document_process_run(
 
     # * Get weight profile
     weight_profile = get_a_weight_profile_for_user_by_id_or_default(session=session, user=user.user, weight_profile_id=weight_profile_id)
+    weight_profile_base = WeightProfileBase(**weight_profile.weights)
 
-    cost_nodes, risk_nodes = transform_data_for_rac(metadata=metadata, result=user_resource_usage.result, module_weight=weight_profile, selected_param={})
-    total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes, module_weight=weight_profile)
-    trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(ct_node=risk_nodes, module_weight=weight_profile)
+    cost_nodes, risk_nodes = create_rac_nodes(
+        metadata=metadata,
+        result=user_resource_usage.result,
+        weight_profile_base=weight_profile_base,
+        selected_param={}
+    )
+    total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes)
+    trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(
+        ct_node=risk_nodes, weight_profile_base=weight_profile_base,
+    )
 
     return ServerResponse(
         data={
@@ -553,23 +590,39 @@ async def get_document_template_run_result(
     metadata=Depends(get_ct_core_metadata_list),
     storage_client: StorageProvider = Depends(get_storage_provider),
 ):
-    result = get_a_document_template_run_result(session=session, document_id=document_id)
+    document_template_run_result = get_a_document_template_run_result(session=session, document_id=document_id)
 
-    if result is None:
+    if document_template_run_result is None:
         return ServerResponse(error="No document found", status_code=404)
 
-    document, resource_usage = result
+    document, resource_usage = document_template_run_result
 
     if resource_usage is None or resource_usage.result is None:
         logger.warning(f"Template document {document.id} does not have inference data")
         return ServerResponse(error="No document found", status_code=404)
 
-    # * Get weight profile
+    # Get weight profile
     weight_profile = get_default_weight_profiles(session=session)
+    weight_profile_base = WeightProfileBase(**weight_profile.weights)
 
-    cost_nodes, risk_nodes = transform_data_for_rac(metadata=metadata, result=resource_usage.result, module_weight=weight_profile, selected_param={})
-    total_cost, total_cost_per_participant = get_total_trial_cost(ct_nodes=cost_nodes, module_weight=weight_profile)
-    trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(ct_node=risk_nodes, module_weight=weight_profile)
+    # Create CT nodes
+    cost_nodes, risk_nodes = create_rac_nodes(
+        metadata=metadata,
+        result=resource_usage.result,
+        weight_profile_base=weight_profile_base,
+        selected_param={}
+    )
+
+    # Calculate trial cost
+    total_cost, total_cost_per_participant = get_total_trial_cost(
+        ct_nodes=cost_nodes,
+    )
+
+    # Calculate trial risk score and level
+    trial_risk_score_numeric, trial_risk_level = get_trial_risk_score(
+        ct_node=risk_nodes,
+        weight_profile_base=weight_profile_base,
+    )
 
     return ServerResponse(
         data={
@@ -655,12 +708,13 @@ async def export_run_result_to_pdf(
 
         # Get weight profile
         weight_profile = get_a_weight_profile_for_user_or_default(session=session, user=db_user)
+        weight_profile_base = WeightProfileBase(**weight_profile.weights)
 
         # Get CT nodes
-        ct_cost_nodes, ct_risk_nodes = transform_data_for_rac(
+        ct_cost_nodes, ct_risk_nodes = create_rac_nodes(
             metadata=metadata,
             result=user_resource_usage.result,
-            module_weight=weight_profile,
+            weight_profile_base=weight_profile_base,
             selected_param={},
         )
 

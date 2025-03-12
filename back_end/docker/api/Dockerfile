@@ -24,7 +24,7 @@ COPY pyproject.toml poetry.lock ./
 # Copy clinical_trials_core
 COPY ./clinical_trials_core ./clinical_trials_core
 
-# Activate environment and install dependencies
+# Install dependencies
 RUN . /venv/bin/activate; \
     $POETRY_HOME/bin/poetry lock --no-update \
     && $POETRY_HOME/bin/poetry install --only main --no-interaction \
@@ -33,26 +33,40 @@ RUN . /venv/bin/activate; \
 # Copy app
 COPY . .
 
-# Download models and demo user data
-RUN mkdir /tmp/models/
-RUN mkdir /tmp/demo_user_data/
-RUN . /venv/bin/activate; \
-    $POETRY_HOME/bin/poetry run python cli --download-models --download-path /tmp/models/ \
-    && $POETRY_HOME/bin/poetry run python cli --download-demo-user-data --download-path /tmp/
+# Download models
+RUN if ! [ -d "/app/models" ] ; then \
+        mkdir /tmp/models && \
+        . /venv/bin/activate && $POETRY_HOME/bin/poetry run python cli --download-models --download-path /tmp/models/ ; \
+    else \
+        mv /app/models /tmp/ ; \
+    fi
+
+# Download demo user data
+RUN if ! [ -d "/app/demo_user_data" ] ; then \
+       mkdir /tmp/demo_user_data && \
+        . /venv/bin/activate && $POETRY_HOME/bin/poetry run python cli --download-demo-user-data --download-path /tmp/ ; \
+    else  \
+        mv /app/demo_user_data /tmp/ ; \
+    fi
 
 # ---------------------------------------------------------
 
 FROM python:3.11-slim AS final
 
-# Install wkhtmltopdf
+# Install system dependencies
 RUN apt-get update && apt-get install -y wkhtmltopdf xxd
-
-# Create storage dir for local storage
-RUN mkdir -p /tmp/storage
-RUN chown -R nobody:nogroup /tmp/storage
 
 # Set user
 USER nobody
+
+# Create dir for local storage
+RUN mkdir -p /tmp/storage
+
+# Create dir for NLTK data
+RUN mkdir -p /tmp/nltk_data
+
+# Create dir for demo user data
+RUN mkdir -p /tmp/demo_user_data
 
 # Set work dir
 WORKDIR /app
@@ -70,7 +84,6 @@ COPY --from=builder --chown=nobody:nogroup /app/ .
 COPY --from=builder --chown=nobody:nogroup /tmp/models/ /tmp/
 
 # Copy demo user data from builder stage
-RUN mkdir /tmp/demo_user_data
 COPY --from=builder --chown=nobody:nogroup /tmp/demo_user_data/ /tmp/demo_user_data/
 RUN . /tmp/envfile && mkdir -p /tmp/storage/cdn/documents/$INIT_DEMO_USER_USER_RESOURCE_IDENTIFIER
 RUN . /tmp/envfile && cp -a /tmp/demo_user_data/documents/* /tmp/storage/cdn/documents/$INIT_DEMO_USER_USER_RESOURCE_IDENTIFIER/

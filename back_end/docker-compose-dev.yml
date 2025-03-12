@@ -6,7 +6,6 @@ services:
             "
         volumes:
             - .:/app
-            - storage:/tmp/storage
 
     celery-worker:
         command: celery -b "redis://redis:6379" -A app.ct_core worker --concurrency=1 -l info

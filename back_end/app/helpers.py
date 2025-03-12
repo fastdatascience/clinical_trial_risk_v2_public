@@ -7,36 +7,35 @@ from uuid import uuid4
 from spacy.tokens import Doc as SpacyDoc
 from sqlmodel import Session, select
 
-from app import services, models, utils, schemas, config
+from app import services, models, utils, schemas
 from app.log_config import logger
 from app.models import AnalysisReport
 from app.models.document.document import Document
 from app.models.user.base import User
 from app.models.weight_profile.base import (
     UserWeightProfile,
-    WeightProfile,
-    WeightProfileBase,
+    WeightProfile
 )
 from app.services import storage_provider
-from app.services import transform
 from app.utils import (
     create_analysis_report_file_storage_key,
     create_document_file_storage_key,
     get_file_extension,
     remove_file_extension,
 )
+from clinicaltrials import transform, schemas as ct_schemas
 
 
 def create_analysis_report_data_and_upload_to_storage(
     db_user: User,
     db_document: Document,
-    ct_cost_nodes: list[transform.CTNode],
-    ct_risk_nodes: list[transform.CTNode],
+    ct_cost_nodes: list[ct_schemas.CTNode],
+    ct_risk_nodes: list[ct_schemas.CTNode],
     user_resource_usage_result: dict,
     tokenised_pages: list[SpacyDoc],
     weight_profile: UserWeightProfile | WeightProfile,
     storage_client: storage_provider.StorageProvider,
-    weights: WeightProfileBase,
+    weights: ct_schemas.WeightProfileBase,
     session: Session,
     logs: OrderedDict[str, list[str]],
     analysis_run_time: float = None,
@@ -52,7 +51,8 @@ def create_analysis_report_data_and_upload_to_storage(
         tokenised_pages=tokenised_pages,
         user_resource_usage_result=user_resource_usage_result,
         trial_risk_score=transform.get_trial_risk_score(
-            ct_node=ct_risk_nodes, module_weight=weight_profile
+            ct_node=ct_risk_nodes,
+            weight_profile_base=ct_schemas.WeightProfileBase(**weight_profile.weights),
         ),
         ct_cost_nodes=ct_cost_nodes,
         ct_risk_nodes=ct_risk_nodes,
